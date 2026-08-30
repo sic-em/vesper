@@ -29,6 +29,8 @@ export class PlayerController {
   private selectedAudio = -1
   private canvas: HTMLCanvasElement
   private meta: VideoMeta | null = null
+  // Kept so the current picture can be redrawn on demand — see repaint().
+  private lastFrame: VideoFrame | null = null
 
   private handlers: Handlers = {
     timeupdate: new Set(),
@@ -220,6 +222,24 @@ export class PlayerController {
     }
   }
 
+  /**
+   * Redraws the frame that is already on screen.
+   *
+   * Canvas capture (what picture-in-picture mirrors) only samples the canvas when something draws
+   * to it, and a paused player draws nothing — so PiP needs a way to ask for the current picture.
+   * Returns false when no frame has been rendered yet.
+   */
+  repaint(): boolean {
+    if (!this.lastFrame) return false
+    this.renderer.render(this.lastFrame)
+    return true
+  }
+
+  private retainFrame(frame: VideoFrame): void {
+    this.lastFrame?.close()
+    this.lastFrame = frame
+  }
+
   setRate(rate: number): void {
     this.clock.setRate(rate)
   }
@@ -307,7 +327,7 @@ export class PlayerController {
 
         const frame = sample.toVideoFrame()
         this.renderer.render(frame)
-        frame.close()
+        this.retainFrame(frame)
         sample.close()
 
         if (this.ttffMs == null) this.ttffMs = performance.now() - this.loadStartedAt
@@ -416,6 +436,8 @@ export class PlayerController {
     this.generation++
     if (this.resumeDeferred) this.resumeDeferred.resolve()
     this.audio?.destroy()
+    this.lastFrame?.close()
+    this.lastFrame = null
     this.renderer.destroy()
     this.demuxer.dispose()
     void this.clock.close()

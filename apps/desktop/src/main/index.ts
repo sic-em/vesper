@@ -226,7 +226,10 @@ function createWindow(): BrowserWindow {
     ...(process.platform !== 'darwin' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      // The playback engine drives decode and canvas mirroring from renderer timers; throttling
+      // them when the window is hidden stalls picture-in-picture and background playback.
+      backgroundThrottling: false
     }
   })
 
