@@ -386,6 +386,10 @@ app.whenReady().then(() => {
     BrowserWindow.fromWebContents(event.sender)?.close()
   })
 
+  ipcMain.handle('devtools:toggle', (event) => {
+    event.sender.toggleDevTools()
+  })
+
   ipcMain.handle('externalPlayer:list', () => listExternalPlayers())
   ipcMain.handle(
     'externalPlayer:open',

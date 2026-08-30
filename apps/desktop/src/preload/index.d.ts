@@ -33,6 +33,9 @@ export interface VesperApi {
       height: number
     }) => Promise<void>
   }
+  devtools: {
+    toggle: () => Promise<void>
+  }
   subtitles: {
     pickFile: () => Promise<{ name: string; bytes: Uint8Array } | null>
   }

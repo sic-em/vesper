@@ -34,6 +34,9 @@ const api = {
     captureToClipboard: (rect: { x: number; y: number; width: number; height: number }) =>
       ipcRenderer.invoke('screenshot:captureToClipboard', rect) as Promise<void>
   },
+  devtools: {
+    toggle: () => ipcRenderer.invoke('devtools:toggle') as Promise<void>
+  },
   subtitles: {
     pickFile: () =>
       ipcRenderer.invoke('subtitles:pickFile') as Promise<{
