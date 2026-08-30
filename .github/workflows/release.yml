@@ -18,11 +18,9 @@ env:
   VITE_TMDB_IMAGE_BASE: https://image.tmdb.org/t/p
   VITE_TMDB_API_BASE: https://api.themoviedb.org/3
   VITE_FANART_API_BASE: https://webservice.fanart.tv/v3
-  VITE_OMDB_API_BASE: https://www.omdbapi.com
   VITE_TMDB_API_KEY: ${{ secrets.VITE_TMDB_API_KEY }}
   VITE_TMDB_API_KEYS: ${{ secrets.VITE_TMDB_API_KEYS }}
   VITE_FANART_API_KEY: ${{ secrets.VITE_FANART_API_KEY }}
-  VITE_OMDB_API_KEY: ${{ secrets.VITE_OMDB_API_KEY }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 

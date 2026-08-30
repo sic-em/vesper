@@ -313,7 +313,6 @@ app.whenReady().then(() => {
         'https://webservice.fanart.tv/*',
         'https://assets.fanart.tv/*',
         'https://api.introdb.app/*',
-        'https://caching.graphql.imdb.com/*',
         'https://*.r2.cloudflarestorage.com/*',
         'https://*.download.real-debrid.com/*'
       ]

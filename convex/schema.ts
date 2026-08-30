@@ -200,5 +200,13 @@ export default defineSchema({
     lastOfflineAt: v.number()
   })
     .index('by_userId', ['userId'])
-    .index('by_online', ['online'])
+    .index('by_online', ['online']),
+
+  omdbRatings: defineTable({
+    imdbId: v.string(),
+    imdb: v.optional(v.number()),
+    imdbVotes: v.optional(v.number()),
+    metacritic: v.optional(v.number()),
+    fetchedAt: v.number()
+  }).index('by_imdbId', ['imdbId'])
 })

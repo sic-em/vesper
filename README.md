@@ -50,6 +50,7 @@ For `COMET_BASE`, open any [Comet](https://github.com/g0ldyy/comet) instance's c
 | Variable                                                                                      | What it enables                                                   |
 | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
 | `FANART_API_KEY`                                                                              | Logos and extra artwork                                           |
+| `OMDB_API_KEY`                                                                                | IMDb and Metascore ratings                                        |
 | `TRAKT_CLIENT_ID` / `TRAKT_CLIENT_SECRET`                                                     | Trakt sync ([create an app](https://trakt.tv/oauth/applications)) |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_BUCKET` / `R2_PUBLIC_URL` | Avatar and banner uploads (any S3-compatible bucket)              |
 | `DISCORD_FEEDBACK_WEBHOOK` / `DISCORD_PRESENCE_WEBHOOK`                                       | In-app feedback and presence pings to your Discord                |

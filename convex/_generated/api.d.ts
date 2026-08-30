@@ -18,6 +18,7 @@ import type * as friendships from "../friendships.js";
 import type * as http from "../http.js";
 import type * as lists from "../lists.js";
 import type * as notifications from "../notifications.js";
+import type * as omdb from "../omdb.js";
 import type * as playback from "../playback.js";
 import type * as presence from "../presence.js";
 import type * as presenceMonitor from "../presenceMonitor.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   lists: typeof lists;
   notifications: typeof notifications;
+  omdb: typeof omdb;
   playback: typeof playback;
   presence: typeof presence;
   presenceMonitor: typeof presenceMonitor;

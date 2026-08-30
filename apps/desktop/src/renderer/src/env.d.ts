@@ -7,8 +7,6 @@ interface ImportMetaEnv {
   readonly VITE_TMDB_API_BASE: string
   readonly VITE_FANART_API_KEY: string
   readonly VITE_FANART_API_BASE: string
-  readonly VITE_OMDB_API_KEY: string
-  readonly VITE_OMDB_API_BASE: string
 }
 
 interface ImportMeta {
