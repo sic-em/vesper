@@ -6,7 +6,14 @@ const api = {
   window: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
     toggleMaximize: () => ipcRenderer.invoke('window:toggleMaximize'),
-    close: () => ipcRenderer.invoke('window:close')
+    close: () => ipcRenderer.invoke('window:close'),
+    setFullScreen: (flag: boolean) => ipcRenderer.invoke('window:setFullScreen', flag),
+    isFullScreen: () => ipcRenderer.invoke('window:isFullScreen') as Promise<boolean>,
+    onFullScreenChange: (cb: (fullscreen: boolean) => void): (() => void) => {
+      const listener = (_e: unknown, fullscreen: boolean): void => cb(fullscreen)
+      ipcRenderer.on('window:fullscreen-changed', listener)
+      return () => ipcRenderer.removeListener('window:fullscreen-changed', listener)
+    }
   },
   discord: {
     setActivity: (input: {

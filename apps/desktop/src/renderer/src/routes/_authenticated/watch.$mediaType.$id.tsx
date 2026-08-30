@@ -118,6 +118,9 @@ function WatchPage(): React.JSX.Element {
   const tmdbId = Number(params.id)
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const pipVideoRef = useRef<HTMLVideoElement | null>(null)
+  const [pipActive, setPipActive] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [muted, setMuted] = useState(false)
   const lastSavedRef = useRef(0)
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -782,12 +785,15 @@ function WatchPage(): React.JSX.Element {
       } else if (key === 'l' || key === 'L') {
         seekTo(cur + 30)
       } else if (key === 'f' || key === 'F') {
-        if (document.fullscreenElement) document.exitFullscreen()
-        else document.documentElement.requestFullscreen()
+        toggleFullscreen()
       } else if (key === 'm' || key === 'M') {
         setMuted((m) => !m)
       } else if (key === 'Escape') {
-        goBack()
+        // Leave fullscreen first; only exit the player when already windowed.
+        void window.api.window.isFullScreen().then((fs) => {
+          if (fs) void window.api.window.setFullScreen(false)
+          else goBack()
+        })
       } else if (/^[0-9]$/.test(key)) {
         const n = Number(key)
         if (dur > 0) seekTo((n / 10) * dur)
@@ -826,9 +832,79 @@ function WatchPage(): React.JSX.Element {
     setSubReloadSec(target)
   }
 
+  // Window fullscreen via the main process — the HTML fullscreen API is unreliable in a
+  // frameless window and would fall out of sync with F11 (which toggles window fullscreen).
+  const toggleFullscreen = useCallback((): void => {
+    void window.api.window.isFullScreen().then((fs) => window.api.window.setFullScreen(!fs))
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    void window.api.window.isFullScreen().then((fs) => {
+      if (!cancelled) setIsFullscreen(fs)
+    })
+    const off = window.api.window.onFullScreenChange(setIsFullscreen)
+    return () => {
+      cancelled = true
+      off()
+    }
+  }, [])
+
+  // The player draws to a canvas (no <video> element), so PiP mirrors the canvas
+  // through a hidden captureStream-backed video.
   const togglePip = async (): Promise<void> => {
-    flashToast('Picture-in-picture not available yet')
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture()
+        return
+      }
+      const canvas = canvasRef.current
+      if (!canvas || !document.pictureInPictureEnabled) {
+        flashToast('Picture-in-picture unavailable')
+        return
+      }
+      let video = pipVideoRef.current
+      if (!video) {
+        video = document.createElement('video')
+        video.muted = true
+        video.playsInline = true
+        video.style.position = 'fixed'
+        video.style.left = '-9999px'
+        video.style.width = '1px'
+        video.addEventListener('enterpictureinpicture', () => setPipActive(true))
+        video.addEventListener('leavepictureinpicture', () => {
+          setPipActive(false)
+          const v = pipVideoRef.current
+          if (!v) return
+          v.pause()
+          const stream = v.srcObject as MediaStream | null
+          stream?.getTracks().forEach((t) => t.stop())
+          v.srcObject = null
+        })
+        document.body.appendChild(video)
+        pipVideoRef.current = video
+      }
+      if (!video.srcObject) video.srcObject = canvas.captureStream()
+      await video.play()
+      await video.requestPictureInPicture()
+    } catch (err) {
+      console.error('picture-in-picture failed', err)
+      flashToast('Picture-in-picture failed')
+    }
   }
+
+  useEffect(() => {
+    return () => {
+      if (document.pictureInPictureElement) void document.exitPictureInPicture().catch(() => {})
+      const video = pipVideoRef.current
+      if (video) {
+        const stream = video.srcObject as MediaStream | null
+        stream?.getTracks().forEach((t) => t.stop())
+        video.remove()
+        pipVideoRef.current = null
+      }
+    }
+  }, [])
 
   const seasonForPrevNext =
     search.mediaType === 'tv' && search.season != null ? search.season : null
@@ -946,6 +1022,9 @@ function WatchPage(): React.JSX.Element {
             onVolumeChange={handleVolumeChange}
             onToggleMute={toggleMute}
             onTogglePip={() => void togglePip()}
+            pipActive={pipActive}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
             showEpisodesButton={search.mediaType === 'tv'}
             onToggleEpisodes={openEpisodesMenu}
             variantSlot={
@@ -1110,6 +1189,9 @@ function BottomBar({
   onVolumeChange,
   onToggleMute,
   onTogglePip,
+  pipActive,
+  isFullscreen,
+  onToggleFullscreen,
   variantSlot,
   subtitleSlot,
   audioSlot,
@@ -1131,6 +1213,9 @@ function BottomBar({
   onVolumeChange: (v: number) => void
   onToggleMute: () => void
   onTogglePip: () => void
+  pipActive: boolean
+  isFullscreen: boolean
+  onToggleFullscreen: () => void
   variantSlot?: React.ReactNode
   subtitleSlot?: React.ReactNode
   audioSlot?: React.ReactNode
@@ -1197,7 +1282,10 @@ function BottomBar({
               </IconButton>
             )}
             {audioSlot}
-            <IconButton aria-label="Picture in picture" onClick={onTogglePip}>
+            <IconButton
+              aria-label={pipActive ? 'Exit picture in picture' : 'Picture in picture'}
+              onClick={onTogglePip}
+            >
               <PipIcon />
             </IconButton>
             {externalPlayerSlot}
@@ -1207,13 +1295,10 @@ function BottomBar({
               </IconButton>
             ) : null}
             <IconButton
-              aria-label="Fullscreen"
-              onClick={() => {
-                if (document.fullscreenElement) document.exitFullscreen()
-                else document.documentElement.requestFullscreen()
-              }}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              onClick={onToggleFullscreen}
             >
-              <FullscreenIcon />
+              {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
             </IconButton>
           </div>
         </div>
@@ -1632,6 +1717,14 @@ function FullscreenIcon(): React.JSX.Element {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
       <path d="M2 17.25V14.75C2 14.33 2.33 14 2.75 14C3.16 14 3.5 14.33 3.5 14.75V17.25C3.5 17.94 4.05 18.5 4.75 18.5H7.25C7.66 18.5 8 18.83 8 19.25C8 19.66 7.66 20 7.25 20H4.75C3.23 20 2 18.76 2 17.25ZM20.5 17.25V14.75C20.5 14.33 20.83 14 21.25 14C21.66 14 22 14.33 22 14.75V17.25C22 18.76 20.76 20 19.25 20H16.75C16.33 20 16 19.66 16 19.25C16 18.83 16.33 18.5 16.75 18.5H19.25C19.94 18.5 20.5 17.94 20.5 17.25ZM2 9.25V6.75C2 5.23 3.23 4 4.75 4H7.25C7.66 4 8 4.33 8 4.75C8 5.16 7.66 5.5 7.25 5.5H4.75C4.05 5.5 3.5 6.05 3.5 6.75V9.25C3.5 9.66 3.16 10 2.75 10C2.33 10 2 9.66 2 9.25ZM20.5 9.25V6.75C20.5 6.05 19.94 5.5 19.25 5.5H16.75C16.33 5.5 16 5.16 16 4.75C16 4.33 16.33 4 16.75 4H19.25C20.76 4 22 5.23 22 6.75V9.25C22 9.66 21.66 10 21.25 10C20.83 10 20.5 9.66 20.5 9.25Z" />
+    </svg>
+  )
+}
+
+function ExitFullscreenIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
+      <path d="M8 2.75V5.25C8 6.76 6.76 8 5.25 8H2.75C2.33 8 2 7.66 2 7.25C2 6.83 2.33 6.5 2.75 6.5H5.25C5.94 6.5 6.5 5.94 6.5 5.25V2.75C6.5 2.33 6.83 2 7.25 2C7.66 2 8 2.33 8 2.75ZM16 2.75V5.25C16 6.76 17.23 8 18.75 8H21.25C21.66 8 22 7.66 22 7.25C22 6.83 21.66 6.5 21.25 6.5H18.75C18.05 6.5 17.5 5.94 17.5 5.25V2.75C17.5 2.33 17.16 2 16.75 2C16.33 2 16 2.33 16 2.75ZM8 21.25V18.75C8 17.23 6.76 16 5.25 16H2.75C2.33 16 2 16.33 2 16.75C2 17.16 2.33 17.5 2.75 17.5H5.25C5.94 17.5 6.5 18.05 6.5 18.75V21.25C6.5 21.66 6.83 22 7.25 22C7.66 22 8 21.66 8 21.25ZM16 21.25V18.75C16 17.23 17.23 16 18.75 16H21.25C21.66 16 22 16.33 22 16.75C22 17.16 21.66 17.5 21.25 17.5H18.75C18.05 17.5 17.5 18.05 17.5 18.75V21.25C17.5 21.66 17.16 22 16.75 22C16.33 22 16 21.66 16 21.25Z" />
     </svg>
   )
 }
