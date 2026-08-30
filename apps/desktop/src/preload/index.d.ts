@@ -14,6 +14,9 @@ export interface VesperApi {
     minimize: () => Promise<void>
     toggleMaximize: () => Promise<void>
     close: () => Promise<void>
+    setFullScreen: (flag: boolean) => Promise<void>
+    isFullScreen: () => Promise<boolean>
+    onFullScreenChange: (cb: (fullscreen: boolean) => void) => () => void
   }
   discord: {
     setActivity: (input: DiscordActivity) => Promise<void>

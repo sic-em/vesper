@@ -236,6 +236,13 @@ function createWindow(): BrowserWindow {
 
   windowState.manage(mainWindow)
 
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow.webContents.send('window:fullscreen-changed', true)
+  })
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow.webContents.send('window:fullscreen-changed', false)
+  })
+
   mainWindowRef = mainWindow
   mainWindow.on('closed', () => {
     if (mainWindowRef === mainWindow) mainWindowRef = null
@@ -281,10 +288,10 @@ function createWindow(): BrowserWindow {
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown') return
-    // Block F11 — users hit it by accident and get stuck in borderless fullscreen.
+    // Handle F11 ourselves so window fullscreen stays in sync with the renderer UI.
     if (input.key === 'F11') {
       event.preventDefault()
-      if (mainWindow.isFullScreen()) mainWindow.setFullScreen(false)
+      mainWindow.setFullScreen(!mainWindow.isFullScreen())
       return
     }
     const mod = process.platform === 'darwin' ? input.meta : input.control
@@ -384,6 +391,12 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('window:close', (event) => {
     BrowserWindow.fromWebContents(event.sender)?.close()
+  })
+  ipcMain.handle('window:setFullScreen', (event, flag: boolean) => {
+    BrowserWindow.fromWebContents(event.sender)?.setFullScreen(Boolean(flag))
+  })
+  ipcMain.handle('window:isFullScreen', (event) => {
+    return BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false
   })
 
   ipcMain.handle('externalPlayer:list', () => listExternalPlayers())
