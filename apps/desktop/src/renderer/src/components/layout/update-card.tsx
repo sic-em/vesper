@@ -58,7 +58,7 @@ export function UpdateCard(): React.JSX.Element | null {
             </button>
           </div>
           <p className="relative mt-1.5 text-[12px] leading-4 text-text-secondary">
-            TV shows now open on season 1 instead of the latest season.
+            Send your stream to VLC, IINA, or mpv, plus a softer look across the app.
           </p>
           <Link
             to="/changelog"

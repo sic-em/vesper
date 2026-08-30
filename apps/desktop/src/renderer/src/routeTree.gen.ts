@@ -31,92 +31,96 @@ import { Route as AuthenticatedWatchMediaTypeIdRouteImport } from './routes/_aut
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
-  getParentRoute: () => rootRouteImport
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SigninRoute = SigninRouteImport.update({
   id: '/signin',
   path: '/signin',
-  getParentRoute: () => rootRouteImport
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotRoute = ForgotRouteImport.update({
   id: '/forgot',
   path: '/forgot',
-  getParentRoute: () => rootRouteImport
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
-  getParentRoute: () => rootRouteImport
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   id: '/search',
   path: '/search',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedNotificationsRoute = AuthenticatedNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => AuthenticatedRoute
-} as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedFriendsRoute = AuthenticatedFriendsRouteImport.update({
   id: '/friends',
   path: '/friends',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedComingSoonRoute = AuthenticatedComingSoonRouteImport.update({
   id: '/coming-soon',
   path: '/coming-soon',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedChangelogRoute = AuthenticatedChangelogRouteImport.update({
   id: '/changelog',
   path: '/changelog',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedUserUsernameRoute = AuthenticatedUserUsernameRouteImport.update({
-  id: '/user/$username',
-  path: '/user/$username',
-  getParentRoute: () => AuthenticatedRoute
-} as any)
+const AuthenticatedUserUsernameRoute =
+  AuthenticatedUserUsernameRouteImport.update({
+    id: '/user/$username',
+    path: '/user/$username',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedTvIdRoute = AuthenticatedTvIdRouteImport.update({
   id: '/tv/$id',
   path: '/tv/$id',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedPersonIdRoute = AuthenticatedPersonIdRouteImport.update({
   id: '/person/$id',
   path: '/person/$id',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedMovieIdRoute = AuthenticatedMovieIdRouteImport.update({
   id: '/movie/$id',
   path: '/movie/$id',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedListIdRoute = AuthenticatedListIdRouteImport.update({
   id: '/list/$id',
   path: '/list/$id',
-  getParentRoute: () => AuthenticatedRoute
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedJoinJoinCodeRoute = AuthenticatedJoinJoinCodeRouteImport.update({
-  id: '/join/$joinCode',
-  path: '/join/$joinCode',
-  getParentRoute: () => AuthenticatedRoute
-} as any)
-const AuthenticatedWatchMediaTypeIdRoute = AuthenticatedWatchMediaTypeIdRouteImport.update({
-  id: '/watch/$mediaType/$id',
-  path: '/watch/$mediaType/$id',
-  getParentRoute: () => AuthenticatedRoute
-} as any)
+const AuthenticatedJoinJoinCodeRoute =
+  AuthenticatedJoinJoinCodeRouteImport.update({
+    id: '/join/$joinCode',
+    path: '/join/$joinCode',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedWatchMediaTypeIdRoute =
+  AuthenticatedWatchMediaTypeIdRouteImport.update({
+    id: '/watch/$mediaType/$id',
+    path: '/watch/$mediaType/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -407,18 +411,18 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedPersonIdRoute: AuthenticatedPersonIdRoute,
   AuthenticatedTvIdRoute: AuthenticatedTvIdRoute,
   AuthenticatedUserUsernameRoute: AuthenticatedUserUsernameRoute,
-  AuthenticatedWatchMediaTypeIdRoute: AuthenticatedWatchMediaTypeIdRoute
+  AuthenticatedWatchMediaTypeIdRoute: AuthenticatedWatchMediaTypeIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren
+  AuthenticatedRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotRoute: ForgotRoute,
   SigninRoute: SigninRoute,
-  SignupRoute: SignupRoute
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
