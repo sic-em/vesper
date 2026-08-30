@@ -1,0 +1,43 @@
+---
+export const prerender = false
+
+import DeepLink from "@/layouts/deep-link.astro"
+import { getListByShortCode } from "@/lib/convex"
+
+const { code } = Astro.params
+const safe = (code ?? "").trim()
+const list = safe ? await getListByShortCode(safe) : null
+
+const title = list?.name ?? "Shared list"
+const ownerLine = list?.owner
+  ? ` by ${list.owner.displayName} (@${list.owner.username})`
+  : ""
+const itemsLine =
+  list && list.itemCount > 0
+    ? ` · ${list.itemCount} ${list.itemCount === 1 ? "title" : "titles"}`
+    : ""
+const description = list?.description
+  ? `${list.description}${ownerLine}`
+  : list
+    ? `A Vesper list${ownerLine}${itemsLine}`
+    : "Open this Vesper list in the app."
+const descPrefix = list ? (list.description ?? "A Vesper list") : null
+const descSuffix =
+  list && !list.description && list.itemCount > 0 ? itemsLine : ""
+const openUrl = `vesper://list/${encodeURIComponent(safe)}`
+const path = `/list/${safe}`
+---
+
+<DeepLink
+  eyebrow="List"
+  title={title}
+  description={description}
+  descPrefix={descPrefix}
+  descSuffix={descSuffix}
+  owner={list?.owner ?? undefined}
+  openUrl={openUrl}
+  path={path}
+  posters={list?.previewPosters ?? []}
+  coverKind={list?.kind}
+  coverSeed={list?._id ?? safe}
+/>

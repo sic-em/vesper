@@ -1,0 +1,68 @@
+---
+export const prerender = false
+
+import Media from "@/layouts/media.astro"
+import { formatRuntime, getEpisode, getTv } from "@/lib/tmdb"
+
+const { id, se } = Astro.params
+const tmdbId = Number(id)
+const match = (se ?? "").match(/^s(\d+)e(\d+)$/i)
+const season = match ? Number(match[1]) : null
+const episode = match ? Number(match[2]) : null
+
+const [show, ep] =
+  Number.isFinite(tmdbId) && season !== null && episode !== null
+    ? await Promise.all([getTv(tmdbId), getEpisode(tmdbId, season, episode)])
+    : [null, null]
+
+const showName = show?.name ?? "Series"
+const epLabel =
+  season !== null && episode !== null ? `S${season} · E${episode}` : ""
+const epTitle = ep?.name ?? ""
+const displayTitle = epTitle ? `${epLabel} — ${epTitle}` : epLabel || showName
+
+const description =
+  ep?.overview ?? show?.overview ?? "Open this episode in Vesper."
+const stillPath = ep?.still_path ?? show?.backdrop_path
+const openUrl =
+  season !== null && episode !== null
+    ? `vesper://tv/${tmdbId}/${season}/${episode}`
+    : `vesper://tv/${tmdbId}`
+const path = `/tv/${tmdbId}/${se}`
+const title = epTitle
+  ? `${showName} · ${epLabel} · ${epTitle}`
+  : `${showName} · ${epLabel}`
+
+const meta: string[] = []
+const runtime = formatRuntime(ep?.runtime)
+if (runtime) meta.push(runtime)
+if (ep?.air_date) {
+  const d = new Date(ep.air_date)
+  if (!Number.isNaN(d.valueOf())) {
+    meta.push(
+      d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    )
+  }
+}
+if (ep?.vote_average && ep.vote_average > 0) {
+  meta.push(`${ep.vote_average.toFixed(1)} ★`)
+}
+meta.push(showName)
+---
+
+<Media
+  title={title}
+  description={description}
+  openUrl={openUrl}
+  path={path}
+  displayTitle={displayTitle}
+  meta={meta}
+  overview={ep?.overview ?? show?.overview}
+  backdropPath={stillPath}
+  posterPath={ep?.still_path ?? show?.poster_path}
+  cast={show?.credits?.cast ?? []}
+/>

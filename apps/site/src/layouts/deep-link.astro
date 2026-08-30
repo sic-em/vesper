@@ -1,0 +1,161 @@
+---
+import Layout from "@/layouts/main.astro"
+
+interface Props {
+  title: string
+  description: string
+  openUrl: string
+  path: string
+  eyebrow?: string
+  posters?: string[]
+  coverKind?: "liked" | "custom"
+  coverSeed?: string
+  descPrefix?: string | null
+  descSuffix?: string
+  owner?: { username: string; displayName: string; avatarUrl?: string }
+}
+
+const {
+  title,
+  description,
+  openUrl,
+  path,
+  eyebrow,
+  posters,
+  coverKind,
+  coverSeed,
+  descPrefix,
+  descSuffix,
+  owner,
+} = Astro.props
+const ownerAvatar =
+  owner?.avatarUrl ??
+  (owner
+    ? `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(owner.displayName)}`
+    : null)
+const visible = (posters ?? []).filter(Boolean)
+const padded = (() => {
+  if (visible.length === 0) return []
+  const out = [...visible]
+  while (out.length < 4) out.push(out[0])
+  return out
+})()
+const tmdb = (p: string) => `https://image.tmdb.org/t/p/w342${p}`
+const glassUrl = `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(coverSeed ?? title)}`
+const showCover = coverKind === "liked" || visible.length > 0 || !!coverSeed
+---
+
+<Layout title={`${title} · Vesper`} description={description} path={path}>
+  <section
+    class="mx-auto flex min-h-dvh max-w-xl flex-col items-start justify-center px-4 py-20 sm:px-8"
+  >
+    {
+      showCover && (
+        <div class="reveal mb-6 size-40 overflow-hidden rounded-[28px] bg-muted">
+          {coverKind === "liked" ? (
+            <div
+              class="flex h-full w-full items-center justify-center"
+              style="background: linear-gradient(135deg, #9200A5 0%, #FC9687 100%);"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="white"
+                class="size-16"
+                aria-hidden="true"
+              >
+                <path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z" />
+              </svg>
+            </div>
+          ) : visible.length > 0 ? (
+            <div class="flex h-full w-full gap-px">
+              <div
+                class="h-full w-3/5 bg-cover bg-center"
+                style={`background-image: url(${tmdb(padded[0])});`}
+              />
+              <div class="flex h-full w-2/5 flex-col gap-px">
+                <div
+                  class="h-1/3 w-full bg-cover bg-center"
+                  style={`background-image: url(${tmdb(padded[1])});`}
+                />
+                <div
+                  class="h-1/3 w-full bg-cover bg-center"
+                  style={`background-image: url(${tmdb(padded[2])});`}
+                />
+                <div
+                  class="h-1/3 w-full bg-cover bg-center"
+                  style={`background-image: url(${tmdb(padded[3])});`}
+                />
+              </div>
+            </div>
+          ) : (
+            <div
+              class="h-full w-full bg-cover bg-center"
+              style={`background-image: url(${glassUrl});`}
+            />
+          )}
+        </div>
+      )
+    }
+
+    {
+      eyebrow && (
+        <span class="reveal mb-4 text-xs tracking-[0.16em] text-muted-foreground uppercase">
+          {eyebrow}
+        </span>
+      )
+    }
+
+    <h1
+      class="reveal mb-3 text-xl font-bold tracking-tight text-foreground [animation-delay:80ms]"
+    >
+      {title}
+    </h1>
+
+    <p
+      class="reveal mb-6 flex max-w-2xl flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground [animation-delay:160ms]"
+    >
+      {
+        descPrefix && owner && ownerAvatar ? (
+          <>
+            <span>{descPrefix} by</span>
+            <img
+              src={ownerAvatar}
+              alt=""
+              class="inline-block size-4 rounded-full object-cover align-middle"
+              loading="lazy"
+            />
+            <span>
+              {owner.displayName} (@{owner.username}){descSuffix}
+            </span>
+          </>
+        ) : (
+          description
+        )
+      }
+    </p>
+
+    <div
+      class="reveal flex flex-wrap items-center gap-3 [animation-delay:240ms]"
+    >
+      <a
+        id="open"
+        href={openUrl}
+        class="inline-flex h-9 items-center rounded-md bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
+      >
+        Open in Vesper
+      </a>
+      <a
+        href="/"
+        class="inline-flex h-9 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Don't have Vesper? Get it &rarr;
+      </a>
+    </div>
+  </section>
+
+  <script is:inline define:vars={{ openUrl }}>
+    setTimeout(() => {
+      window.location.href = openUrl
+    }, 200)
+  </script>
+</Layout>

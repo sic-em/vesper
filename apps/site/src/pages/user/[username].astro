@@ -1,0 +1,193 @@
+---
+export const prerender = false
+
+import Layout from "@/layouts/main.astro"
+import { getPublicProfile, type PublicListPreview } from "@/lib/convex"
+
+const { username } = Astro.params
+const safe = (username ?? "").trim()
+const profile = safe ? await getPublicProfile(safe) : null
+
+const title = profile
+  ? `${profile.displayName} (@${profile.username})`
+  : `@${safe}`
+const description = profile?.bio
+  ? `${profile.bio} — Vesper profile`
+  : `View ${profile?.displayName ?? `@${safe}`}'s Vesper profile.`
+const openUrl = `vesper://user/${encodeURIComponent(safe)}`
+const path = `/user/${safe}`
+
+const joined = profile
+  ? new Date(profile.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+    })
+  : null
+
+const avatarFallback = profile
+  ? `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(profile.displayName)}`
+  : null
+
+const tmdb = (p: string) => `https://image.tmdb.org/t/p/w342${p}`
+
+function pad4(posters: string[]): string[] {
+  if (posters.length === 0) return []
+  const out = [...posters]
+  while (out.length < 4) out.push(out[0])
+  return out
+}
+
+function listHref(l: PublicListPreview): string {
+  return l.shortCode ? `/list/${l.shortCode}` : "#"
+}
+---
+
+<Layout title={`${title} · Vesper`} description={description} path={path}>
+  <section class="mx-auto max-w-2xl px-4 py-20 sm:px-8">
+    {
+      profile?.bannerUrl && (
+        <div
+          class="reveal mb-8 h-40 w-full overflow-hidden rounded-2xl bg-muted bg-cover bg-center"
+          style={`background-image: url(${profile.bannerUrl});`}
+        />
+      )
+    }
+
+    <div class="reveal mb-6 flex items-center gap-4">
+      <img
+        src={profile?.avatarUrl ?? avatarFallback ?? "/og.jpg"}
+        alt=""
+        class="size-20 rounded-full object-cover ring-1 ring-border"
+      />
+      <div class="flex flex-col">
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">
+          {profile?.displayName ?? `@${safe}`}
+        </h1>
+        <span class="text-sm text-muted-foreground"
+          >@{profile?.username ?? safe}</span
+        >
+      </div>
+    </div>
+
+    {
+      profile?.bio && (
+        <p class="reveal mb-5 max-w-xl text-sm leading-relaxed text-foreground [animation-delay:80ms]">
+          {profile.bio}
+        </p>
+      )
+    }
+
+    {
+      profile && (
+        <div class="reveal mb-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground [animation-delay:120ms]">
+          <span>
+            {profile.listCount}{" "}
+            {profile.listCount === 1 ? "public list" : "public lists"}
+          </span>
+          <span class="opacity-40">·</span>
+          <span>
+            {profile.friendCount}{" "}
+            {profile.friendCount === 1 ? "friend" : "friends"}
+          </span>
+          {joined && (
+            <>
+              <span class="opacity-40">·</span>
+              <span>Joined {joined}</span>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    <div
+      class="reveal mb-12 flex flex-wrap items-center gap-3 [animation-delay:200ms]"
+    >
+      <a
+        id="open"
+        href={openUrl}
+        class="inline-flex h-9 items-center rounded-md bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
+      >
+        Open in Vesper
+      </a>
+      <a
+        href="/"
+        class="inline-flex h-9 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Don't have Vesper? Get it &rarr;
+      </a>
+    </div>
+
+    {
+      profile && profile.publicLists.length > 0 && (
+        <div class="reveal [animation-delay:280ms]">
+          <h2 class="mb-4 text-xs tracking-[0.16em] text-muted-foreground uppercase">
+            Public Lists
+          </h2>
+          <ul class="grid grid-cols-2 gap-x-5 gap-y-6">
+            {profile.publicLists.map((l) => {
+              const padded = pad4(l.previewPosters)
+              return (
+                <li>
+                  <a href={listHref(l)} class="group block">
+                    <div class="mb-3 aspect-square w-full overflow-hidden rounded-xl bg-muted">
+                      {l.kind === "liked" ? (
+                        <div
+                          class="flex h-full w-full items-center justify-center"
+                          style="background: linear-gradient(135deg, #9200A5 0%, #FC9687 100%);"
+                        >
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="white"
+                            class="size-10"
+                            aria-hidden="true"
+                          >
+                            <path d="M12 21s-7-4.35-7-10a4 4 0 0 1 7-2.65A4 4 0 0 1 19 11c0 5.65-7 10-7 10z" />
+                          </svg>
+                        </div>
+                      ) : padded.length > 0 ? (
+                        <div class="flex h-full w-full gap-px">
+                          <div
+                            class="h-full w-3/5 bg-cover bg-center"
+                            style={`background-image: url(${tmdb(padded[0])});`}
+                          />
+                          <div class="flex h-full w-2/5 flex-col gap-px">
+                            <div
+                              class="h-1/3 w-full bg-cover bg-center"
+                              style={`background-image: url(${tmdb(padded[1])});`}
+                            />
+                            <div
+                              class="h-1/3 w-full bg-cover bg-center"
+                              style={`background-image: url(${tmdb(padded[2])});`}
+                            />
+                            <div
+                              class="h-1/3 w-full bg-cover bg-center"
+                              style={`background-image: url(${tmdb(padded[3])});`}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div class="h-full w-full" />
+                      )}
+                    </div>
+                    <div class="truncate text-sm font-medium text-foreground transition-colors group-hover:text-foreground/70">
+                      {l.name}
+                    </div>
+                    <div class="text-xs text-muted-foreground">
+                      {l.itemCount} {l.itemCount === 1 ? "title" : "titles"}
+                    </div>
+                  </a>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )
+    }
+  </section>
+
+  <script is:inline define:vars={{ openUrl }}>
+    setTimeout(() => {
+      window.location.href = openUrl
+    }, 200)
+  </script>
+</Layout>

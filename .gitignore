@@ -1,0 +1,34 @@
+node_modules
+out
+dist
+dist-builder
+
+# Vendored mediabunny fork (prebuilt) must be committed
+!vendor/mediabunny/dist
+!vendor/mediabunny/dist/**
+apps/desktop/resources/bin
+.DS_Store
+*.log
+.vite-cache
+.eslintcache
+.tanstack
+mitm_mcp_traffic.db
+.env
+.env.local
+.env.*.local
+.env.release
+
+# Agent/planning files stay local
+docs/
+**/CLAUDE.md
+CONTEXT.md
+AGENTS.md
+.claude/
+**/.claude/
+.agents/
+.codex/
+.mcp.json
+
+# Local Netlify folder
+.netlify
+apps/site/.wrangler/

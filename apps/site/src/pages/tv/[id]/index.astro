@@ -1,0 +1,49 @@
+---
+export const prerender = false
+
+import Media from "@/layouts/media.astro"
+import { formatRuntime, getTv } from "@/lib/tmdb"
+
+const { id } = Astro.params
+const tmdbId = Number(id)
+const show = Number.isFinite(tmdbId) ? await getTv(tmdbId) : null
+
+const name = show?.name ?? "Series"
+const year = show?.first_air_date ? show.first_air_date.slice(0, 4) : undefined
+const description = show?.overview ?? "Open this series in Vesper."
+const openUrl = `vesper://tv/${tmdbId}`
+const path = `/tv/${tmdbId}`
+const title = year ? `${name} (${year})` : name
+
+const meta: string[] = []
+if (show?.number_of_seasons) {
+  meta.push(
+    `${show.number_of_seasons} ${show.number_of_seasons === 1 ? "season" : "seasons"}`
+  )
+}
+if (show?.number_of_episodes) {
+  meta.push(`${show.number_of_episodes} eps`)
+}
+const epRuntime = formatRuntime(show?.episode_run_time?.[0])
+if (epRuntime) meta.push(`${epRuntime} ep`)
+if (show?.vote_average && show.vote_average > 0) {
+  meta.push(`${show.vote_average.toFixed(1)} ★`)
+}
+const genreNames = (show?.genres ?? []).map((g) => g.name).slice(0, 2)
+if (genreNames.length > 0) meta.push(genreNames.join(", "))
+---
+
+<Media
+  title={title}
+  description={description}
+  openUrl={openUrl}
+  path={path}
+  displayTitle={name}
+  year={year}
+  meta={meta}
+  overview={show?.overview}
+  tagline={show?.tagline}
+  backdropPath={show?.backdrop_path}
+  posterPath={show?.poster_path}
+  cast={show?.credits?.cast ?? []}
+/>

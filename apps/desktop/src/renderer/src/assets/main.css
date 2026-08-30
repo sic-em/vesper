@@ -1,0 +1,349 @@
+@import 'tailwindcss';
+
+/* Interactive controls show the pointer cursor. */
+@layer base {
+  /* Continuous-curvature corners everywhere a radius exists (ADR-0013). */
+  *,
+  *::before,
+  *::after {
+    corner-shape: squircle;
+  }
+
+  button:not(:disabled),
+  [role='button']:not([data-disabled]),
+  [role='menuitem']:not([data-disabled]),
+  [role='menuitemradio']:not([data-disabled]),
+  [role='option']:not([data-disabled]),
+  a[href] {
+    cursor: pointer;
+  }
+}
+
+/* ----- design tokens (oa-design grammar on Vesper's dark palette, ADR-0013) ----- */
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro', 'SF Pro Text', 'Segoe UI Variable', 'Segoe UI',
+    system-ui, sans-serif;
+
+  /* Neutrals are never picked: they are --ink mixed into transparency at
+     stated percentages (oa-design's one idea, re-inked white for dark). */
+  --color-ink: #ffffff;
+  --color-bg: #000000;
+  --color-surface: #121212;
+  --color-surface-2: #1a1a1a;
+  --color-surface-3: #2a2a2a;
+  --color-surface-ink: #0a0a0a;
+
+  --color-text: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.86);
+  --color-text-tertiary: #b3b3b3;
+  --color-text-muted: #7f7f7f;
+  --color-text-faint: rgba(255, 255, 255, 0.55);
+
+  --color-border: color-mix(in srgb, #ffffff 14%, transparent);
+  --color-input: color-mix(in srgb, #ffffff 16%, transparent);
+  --color-wash: color-mix(in srgb, #ffffff 5%, transparent);
+
+  --color-overlay-soft: rgba(255, 255, 255, 0.16);
+  --color-overlay-hard: rgba(255, 255, 255, 0.18);
+  --color-track: rgba(255, 255, 255, 0.25);
+
+  --color-accent: #ffffff;
+  --color-accent-fg: #000000;
+
+  /* One base radius, multiplied — never a bespoke radius on a one-off element. */
+  --radius-base: 10px;
+  --radius-xs: calc(var(--radius-base) * 0.6);
+  --radius-sm: calc(var(--radius-base) * 0.8);
+  --radius-md: var(--radius-base);
+  --radius-lg: calc(var(--radius-base) * 1.4);
+  --radius-xl: calc(var(--radius-base) * 1.8);
+  --radius-2xl: calc(var(--radius-base) * 2.2);
+
+  /* Weight ceiling: hierarchy comes from size, color, and spacing — never
+     heaviness. bold/semibold utilities render at 500. */
+  --font-weight-semibold: 500;
+  --font-weight-bold: 500;
+
+  --text-xs: 11px;
+  --text-xs--line-height: 14px;
+  --text-sm: 12px;
+  --text-sm--line-height: 16px;
+  --text-base: 13px;
+  --text-base--line-height: 16px;
+  --text-md: 14px;
+  --text-md--line-height: 18px;
+  --text-lg: 16px;
+  --text-lg--line-height: 20px;
+  --text-xl: 18px;
+  --text-xl--line-height: 22px;
+}
+
+/* ----- base ----- */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  overflow: hidden;
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+button {
+  font-family: inherit;
+}
+
+img,
+svg {
+  -webkit-user-drag: none;
+}
+
+/* drag region for frameless window */
+.app-drag {
+  -webkit-app-region: drag;
+}
+.app-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* hide scrollbars but keep scrolling */
+.scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+.scroll-hide {
+  scrollbar-width: none;
+}
+
+/* global thin scrollbar — applies to all scrollable elements by default */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.32);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* allotment: suppress sash hover/active line + separator border */
+.split-view {
+  --focus-border: transparent;
+  --separator-border: transparent;
+}
+.split-view-view::before {
+  display: none !important;
+}
+.sash:hover::before,
+.sash.active::before,
+.sash.hover::before {
+  background: transparent !important;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+/* Elevation is binary: a thing is resting or it is floating (ADR-0013).
+   The inset hairline stays — dark surfaces need edge definition. */
+:root {
+  --shadow-resting: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-floating:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.45),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.dm-elevation-0 {
+  box-shadow: none;
+}
+.dm-elevation-1,
+.dm-elevation-2 {
+  box-shadow: var(--shadow-resting);
+}
+.dm-elevation-3,
+.dm-elevation-4,
+.dm-elevation-5,
+.dm-elevation-6,
+.dm-elevation-7 {
+  box-shadow: var(--shadow-floating);
+}
+
+/* Transitions.dev — universal tokens */
+:root {
+  --resize-dur: 300ms;
+  --resize-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --press-dur: 140ms;
+  --press-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --hover-dur: 150ms;
+  --hover-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --shake-distance: 6px;
+  --shake-overshoot: 4px;
+  --shake-dur-a: 80ms;
+  --shake-dur-b: 60ms;
+  --shake-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --revert-dur: 280ms;
+}
+
+.t-input {
+  transition:
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out;
+  will-change: transform;
+}
+.t-input.is-error {
+  transition:
+    border-color var(--revert-dur, 280ms) ease-out,
+    box-shadow var(--revert-dur, 280ms) ease-out;
+}
+.t-error-msg {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--revert-dur, 280ms) ease-out,
+    visibility 0s linear var(--revert-dur, 280ms);
+}
+.t-input-wrap.is-error .t-error-msg {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--revert-dur, 280ms) ease-out,
+    visibility 0s linear 0s;
+}
+.t-input.is-shaking {
+  animation: t-input-shake calc(var(--shake-dur-a) * 2 + var(--shake-dur-b) * 2) linear;
+}
+@keyframes t-input-shake {
+  0% {
+    transform: translateX(0);
+    animation-timing-function: var(--shake-ease);
+  }
+  28.57% {
+    transform: translateX(var(--shake-distance));
+    animation-timing-function: var(--shake-ease);
+  }
+  57.14% {
+    transform: translateX(calc(var(--shake-distance) * -1));
+    animation-timing-function: var(--shake-ease);
+  }
+  78.57% {
+    transform: translateX(var(--shake-overshoot));
+    animation-timing-function: var(--shake-ease);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-input {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Episode focus pulse — share-link landing highlight */
+.episode-focus-pulse {
+  animation: episode-focus-pulse 2500ms linear forwards;
+}
+@keyframes episode-focus-pulse {
+  0% {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0);
+  }
+  8% {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+  }
+  65% {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .episode-focus-pulse {
+    animation: none !important;
+  }
+}
+
+@keyframes rating-star-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.rating-star-in {
+  opacity: 0;
+  animation: rating-star-in 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rating-star-in {
+    animation-duration: 0ms !important;
+  }
+}
+
+/* Data arrives by focus, not by pop: an animation, not a transition — the
+   content mounts already final. blur(0) stays on the element permanently. */
+@keyframes oa-arrive {
+  from {
+    opacity: 0.4;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+.oa-arrive {
+  animation: oa-arrive 0.3s ease-out;
+  filter: blur(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .oa-arrive {
+    animation: none;
+  }
+}
+
+body.is-screenshotting *:not(video):not(:has(video)) {
+  visibility: hidden !important;
+}
+
+/* While reordering a sidebar list, force the grabbing cursor everywhere it travels. */
+body.is-reordering,
+body.is-reordering * {
+  cursor: grabbing !important;
+}
+
+/* Crop modal: grab/grabbing on the drag area instead of react-easy-crop's default move cursor.
+   Doubled class raises specificity above the library rule without !important. */
+.reactEasyCrop_Container.reactEasyCrop_Container {
+  cursor: grab;
+}
+.reactEasyCrop_Container.reactEasyCrop_Container:active {
+  cursor: grabbing;
+}

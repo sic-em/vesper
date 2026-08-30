@@ -1,0 +1,182 @@
+---
+export const prerender = true
+
+import Layout from "@/layouts/main.astro"
+import { DownloadButton } from "@/components/download-button"
+import desktopPkg from "../../../desktop/package.json"
+
+const version = desktopPkg.version
+
+const wordmark = [
+  "_/\\/\\____/\\/\\__/\\/\\/\\/\\/\\/\\____/\\/\\/\\/\\/\\__/\\/\\/\\/\\/\\____/\\/\\/\\/\\/\\/\\__/\\/\\/\\/\\/\\___",
+  "_/\\/\\____/\\/\\__/\\____________/\\/\\__________/\\/\\____/\\/\\__/\\____________/\\/\\____/\\/\\_",
+  "_/\\/\\____/\\/\\__/\\/\\/\\/\\/\\______/\\/\\/\\/\\____/\\/\\/\\/\\/\\____/\\/\\/\\/\\/\\____/\\/\\/\\/\\/\\___",
+  "___/\\/\\/\\/\\____/\\/\\__________________/\\/\\__/\\/\\__________/\\/\\__________/\\/\\__/\\/\\___",
+  "_____/\\/\\______/\\/\\/\\/\\/\\/\\__/\\/\\/\\/\\/\\____/\\/\\__________/\\/\\/\\/\\/\\/\\__/\\/\\____/\\/\\_",
+  "____________________________________________________________________________________",
+].join("\n")
+
+const softwareSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Vesper",
+  applicationCategory: "MultimediaApplication",
+  operatingSystem: "macOS, Windows",
+  softwareVersion: version,
+  description:
+    "Vesper pulls together movies, shows, and anime in one library with instant cached playback. Free desktop app for Mac and Windows.",
+  url: "https://vespr.dev/",
+  downloadUrl: "https://vespr.dev/",
+  screenshot: "https://vespr.dev/hero.webp",
+  featureList:
+    "Unified library for movies, TV, and anime. Instant cached playback. Real subtitles with automatic audio-sync. Intro and recap skip on TV shows. Cross-device watch progress. Letterboxd and Trakt import. Discord Rich Presence. Rebindable keyboard shortcuts. OpenDyslexic font toggle.",
+  author: {
+    "@type": "Organization",
+    name: "Vesper",
+    url: "https://vespr.dev/",
+  },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+    availability: "https://schema.org/InStock",
+  },
+}
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Vesper",
+  url: "https://vespr.dev/",
+}
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Vesper",
+  url: "https://vespr.dev/",
+  logo: "https://vespr.dev/favicon-192.png",
+}
+---
+
+<Layout>
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(softwareSchema)}
+  />
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(websiteSchema)}
+  />
+  <script
+    is:inline
+    type="application/ld+json"
+    set:html={JSON.stringify(organizationSchema)}
+  />
+
+  <section
+    class="mx-auto flex max-w-xl flex-col items-start justify-center px-4 pt-32 pb-0 sm:px-8 sm:pt-40"
+  >
+    <div class="reveal mb-6 [animation-delay:80ms]">
+      <pre
+        role="img"
+        aria-label="Vesper"
+        class="inline-block text-[10px] leading-[1.08] tracking-[-0.03em] text-foreground">{wordmark}</pre>
+    </div>
+
+    <h1
+      class="reveal mb-3 text-xl font-bold tracking-tight text-foreground [animation-delay:160ms]"
+    >
+      One app for everything you watch.
+    </h1>
+
+    <p
+      class="reveal mb-6 max-w-2xl text-sm text-muted-foreground [animation-delay:240ms]"
+    >
+      Vesper pulls together movies, shows, and anime in one library with instant
+      cached playback. Free for Mac and Windows.
+    </p>
+
+    <div class="reveal [animation-delay:320ms]">
+      <DownloadButton client:load version={version} />
+    </div>
+  </section>
+
+  <section class="screenshot-demo-section">
+    <div class="screenshot-demo reveal [animation-delay:400ms]">
+      <figure class="screenshot-demo__frame">
+        <picture>
+          <source srcset="/screenshots/hero-home.avif" type="image/avif" />
+          <img
+            src="/screenshots/hero-home.png"
+            alt="Vesper app, showing the detail page for a movie with friends watching activity on the right"
+            width="2000"
+            height="1280"
+            loading="eager"
+            decoding="async"
+            draggable="false"
+          />
+        </picture>
+      </figure>
+    </div>
+  </section>
+
+  <style>
+    .screenshot-demo-section {
+      padding: 48px 16px 96px;
+      overflow: hidden;
+    }
+    .screenshot-demo {
+      width: 80%;
+      max-width: none;
+      margin-inline: auto;
+      transform: perspective(2000px) rotateX(2deg);
+      transform-origin: 50% 100%;
+      transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform;
+    }
+    .screenshot-demo:hover {
+      transform: perspective(2000px) rotateX(0deg);
+    }
+    .screenshot-demo__frame {
+      margin: 0;
+      aspect-ratio: 2074 / 1280;
+      background: transparent;
+      border-radius: 28px;
+      overflow: hidden;
+    }
+    .screenshot-demo__frame picture,
+    .screenshot-demo__frame img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center -2px;
+      image-rendering: -webkit-optimize-contrast;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-user-drag: none;
+      -webkit-touch-callout: none;
+    }
+    .screenshot-demo__frame img {
+      -webkit-mask-image: linear-gradient(to bottom, #000 10%, transparent 85%);
+      mask-image: linear-gradient(to bottom, #000 10%, transparent 85%);
+    }
+    @media (max-width: 820px) {
+      .screenshot-demo {
+        display: none;
+      }
+      .screenshot-demo-section {
+        padding-bottom: 0;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .screenshot-demo {
+        transform: none;
+        transition: none;
+      }
+    }
+  </style>
+</Layout>

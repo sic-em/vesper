@@ -1,0 +1,42 @@
+# Vesper
+
+> Vesper is a free desktop app that pulls together movies, shows, and anime in one library with instant cached playback. For macOS and Windows.
+
+license: https://creativecommons.org/licenses/by/4.0/
+updated: 2026-05-09
+
+## What Vesper is
+
+Vesper is a free desktop application that combines a catalog, a personal library, and a video player into one app. It aggregates streams from the open web, plays them instantly with cached debrid delivery, supports proper subtitles, tracks progress across devices, and lets you import watchlists from Letterboxd and Trakt. It is not a streaming service, has no subscription, and runs locally as a native desktop app.
+
+## Key features
+
+- Unified library for movies, TV shows, and anime, with metadata from TMDB, AniList, Kitsu, and Trakt.
+- Instant cached playback with no buffering and no subscriptions.
+- OpenSubtitles integration with automatic audio-fingerprint sync and embedded subtitle track extraction.
+- Intro, recap, and outro skip for TV shows.
+- Cross-device watch progress sync and a continue-watching shelf.
+- Letterboxd CSV import for watchlists, watched history, and ratings.
+- Collaborative-filtering home feed driven by the ratings you give.
+- Friends with real-time presence, and Discord Rich Presence while you watch.
+- Fully rebindable keyboard shortcuts.
+- Accessibility options including an OpenDyslexic font toggle.
+
+## How it compares
+
+- Unlike single-service streaming apps, Vesper does not require a subscription and covers any title that is findable on the open web.
+- Unlike browser-based players, Vesper runs as a native desktop app with instant cached playback, proper keyboard shortcuts, and Discord presence.
+- Unlike library-only trackers, Vesper lets you press play directly on anything in your library — search, stream, and watch happen in one place.
+
+## Supported platforms
+
+- macOS on Apple Silicon (macOS 12 and later).
+- Windows 10 and later, x64.
+
+## Download
+
+- The download button on https://vespr.dev/ picks the right installer for your platform automatically.
+
+## Links
+
+- Website: https://vespr.dev

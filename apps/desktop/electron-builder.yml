@@ -1,0 +1,65 @@
+appId: sh.mirae.app
+productName: Vesper
+electronUpdaterCompatibility: '>= 2.16'
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+npmRebuild: false
+directories:
+  output: dist-builder
+  buildResources: build
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+asar: true
+asarUnpack:
+  - node_modules/electron-updater/**/*
+  - resources/**
+compression: normal
+win:
+  target: nsis
+  artifactName: Vesper-Setup-${version}.exe
+  icon: build/icon.ico
+nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Vesper
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  uninstallDisplayName: Vesper
+  artifactName: Vesper-Setup-${version}.exe
+  deleteAppDataOnUninstall: false
+mac:
+  target:
+    - target: zip
+      arch:
+        - arm64
+  category: public.app-category.entertainment
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  notarize: true
+  artifactName: Vesper-${version}-${arch}.${ext}
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+dmg:
+  artifactName: Vesper-${version}-${arch}.dmg
+publish:
+  - provider: generic
+    url: https://pub-92303d062b7f481ea248cd257e2b658c.r2.dev/release
+  - provider: s3
+    endpoint: https://bdc3cd48c7cafed85bc72348c7fa64eb.r2.cloudflarestorage.com
+    bucket: mirae
+    region: auto
+    path: release

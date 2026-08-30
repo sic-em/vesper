@@ -1,0 +1,98 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Build without publishing to the update feed'
+        type: boolean
+        default: true
+
+env:
+  NODE_OPTIONS: --max-old-space-size=6144
+  VITE_CONVEX_URL: https://peaceful-chipmunk-367.convex.cloud
+  VITE_CONVEX_SITE_URL: https://peaceful-chipmunk-367.convex.site
+  VITE_TMDB_IMAGE_BASE: https://image.tmdb.org/t/p
+  VITE_TMDB_API_BASE: https://api.themoviedb.org/3
+  VITE_FANART_API_BASE: https://webservice.fanart.tv/v3
+  VITE_OMDB_API_BASE: https://www.omdbapi.com
+  VITE_TMDB_API_KEY: ${{ secrets.VITE_TMDB_API_KEY }}
+  VITE_TMDB_API_KEYS: ${{ secrets.VITE_TMDB_API_KEYS }}
+  VITE_FANART_API_KEY: ${{ secrets.VITE_FANART_API_KEY }}
+  VITE_OMDB_API_KEY: ${{ secrets.VITE_OMDB_API_KEY }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  deploy-backend:
+    # Tag pushes deploy Convex prod before packaging, matching the old ship flow.
+    if: github.event_name == 'push' || inputs.dry_run == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: npx convex deploy --yes
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  build-mac:
+    needs: deploy-backend
+    if: always() && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    runs-on: macos-14
+    env:
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Package (publish)
+        if: github.event_name == 'push' || inputs.dry_run == false
+        run: pnpm --filter @vesper/desktop dist:mac
+      - name: Package (dry run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+        run: pnpm --filter @vesper/desktop dist:mac:nopub
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm64
+          path: apps/desktop/dist-builder/*.zip
+          if-no-files-found: error
+
+  build-win:
+    needs: deploy-backend
+    if: always() && (needs.deploy-backend.result == 'success' || needs.deploy-backend.result == 'skipped')
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Package (publish)
+        if: github.event_name == 'push' || inputs.dry_run == false
+        run: pnpm --filter @vesper/desktop dist:win
+      - name: Package (dry run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+        run: pnpm --filter @vesper/desktop dist:win:nopub
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-x64
+          path: apps/desktop/dist-builder/*.exe
+          if-no-files-found: error

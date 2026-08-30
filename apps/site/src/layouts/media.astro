@@ -1,0 +1,171 @@
+---
+import Layout from "@/layouts/main.astro"
+import { still, profile as profileImg, type TmdbCastMember } from "@/lib/tmdb"
+
+interface Props {
+  title: string
+  description: string
+  openUrl: string
+  path: string
+  displayTitle: string
+  year?: string
+  meta?: string[]
+  overview?: string
+  tagline?: string
+  backdropPath?: string | null
+  posterPath?: string | null
+  cast?: TmdbCastMember[]
+}
+
+const {
+  title,
+  description,
+  openUrl,
+  path,
+  displayTitle,
+  year,
+  meta = [],
+  overview,
+  tagline,
+  backdropPath,
+  posterPath,
+  cast = [],
+} = Astro.props
+
+const castTop = cast.slice(0, 6)
+const backdropUrl = backdropPath ? still(backdropPath, "original") : null
+const posterUrl = posterPath ? still(posterPath, "w300") : null
+---
+
+<Layout title={`${title} · Vesper`} description={description} path={path}>
+  {
+    backdropUrl && (
+      <div class="reveal pointer-events-none absolute inset-x-0 top-0 -z-10 h-[55vh] overflow-hidden">
+        <div
+          class="h-full w-full bg-cover bg-center opacity-30"
+          style={`background-image: url(${backdropUrl}); filter: blur(2px);`}
+        />
+        <div
+          class="absolute inset-0"
+          style="background: linear-gradient(180deg, transparent 0%, var(--background) 90%);"
+        />
+      </div>
+    )
+  }
+
+  <section class="relative mx-auto max-w-2xl px-4 py-20 sm:px-8">
+    <div class="reveal mb-6 flex items-start gap-5">
+      {
+        posterUrl && (
+          <img
+            src={posterUrl}
+            alt=""
+            class="h-32 w-[88px] flex-shrink-0 rounded-lg object-cover ring-1 ring-border"
+            loading="lazy"
+          />
+        )
+      }
+      <div class="min-w-0 flex-1 pt-1">
+        <h1
+          class="mb-1 text-2xl leading-tight font-bold tracking-tight text-foreground"
+        >
+          {displayTitle}
+          {
+            year && (
+              <span class="font-normal text-muted-foreground"> ({year})</span>
+            )
+          }
+        </h1>
+        {
+          meta.length > 0 && (
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              {meta.map((m, i) => (
+                <>
+                  {i > 0 && <span class="opacity-40">·</span>}
+                  <span>{m}</span>
+                </>
+              ))}
+            </div>
+          )
+        }
+      </div>
+    </div>
+
+    {
+      tagline && (
+        <p class="reveal mb-3 max-w-xl text-sm text-muted-foreground italic [animation-delay:120ms]">
+          "{tagline}"
+        </p>
+      )
+    }
+
+    {
+      overview && (
+        <p class="reveal mb-8 max-w-xl text-sm leading-relaxed text-foreground [animation-delay:160ms]">
+          {overview}
+        </p>
+      )
+    }
+
+    <div
+      class="reveal mb-12 flex flex-wrap items-center gap-3 [animation-delay:200ms]"
+    >
+      <a
+        id="open"
+        href={openUrl}
+        class="inline-flex h-9 items-center rounded-md bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
+      >
+        Open in Vesper
+      </a>
+      <a
+        href="/"
+        class="inline-flex h-9 items-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Don't have Vesper? Get it &rarr;
+      </a>
+    </div>
+
+    {
+      castTop.length > 0 && (
+        <div class="reveal [animation-delay:280ms]">
+          <h2 class="mb-4 text-xs tracking-[0.16em] text-muted-foreground uppercase">
+            Cast
+          </h2>
+          <ul class="grid grid-cols-3 gap-x-4 gap-y-5 sm:grid-cols-6">
+            {castTop.map((c) => {
+              const img = profileImg(c.profile_path)
+              return (
+                <li class="flex flex-col items-center text-center">
+                  {img ? (
+                    <img
+                      src={img}
+                      alt=""
+                      class="mb-2 size-14 rounded-full object-cover ring-1 ring-border"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div class="mb-2 size-14 rounded-full bg-muted ring-1 ring-border" />
+                  )}
+                  <div class="line-clamp-2 text-xs font-medium text-foreground">
+                    {c.name}
+                  </div>
+                  {c.character && (
+                    <div class="line-clamp-1 text-[11px] text-muted-foreground">
+                      {c.character}
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )
+    }
+  </section>
+
+  <script is:inline define:vars={{ openUrl }}>
+    setTimeout(() => {
+      window.location.href = openUrl
+    }, 200)
+  </script>
+</Layout>

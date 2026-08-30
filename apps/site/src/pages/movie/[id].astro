@@ -1,0 +1,41 @@
+---
+export const prerender = false
+
+import Media from "@/layouts/media.astro"
+import { formatRuntime, getMovie } from "@/lib/tmdb"
+
+const { id } = Astro.params
+const tmdbId = Number(id)
+const movie = Number.isFinite(tmdbId) ? await getMovie(tmdbId) : null
+
+const name = movie?.title ?? "Movie"
+const year = movie?.release_date ? movie.release_date.slice(0, 4) : undefined
+const description = movie?.overview ?? "Open this movie in Vesper."
+const openUrl = `vesper://movie/${tmdbId}`
+const path = `/movie/${tmdbId}`
+const title = year ? `${name} (${year})` : name
+
+const meta: string[] = []
+const runtime = formatRuntime(movie?.runtime)
+if (runtime) meta.push(runtime)
+if (movie?.vote_average && movie.vote_average > 0) {
+  meta.push(`${movie.vote_average.toFixed(1)} ★`)
+}
+const genreNames = (movie?.genres ?? []).map((g) => g.name).slice(0, 2)
+if (genreNames.length > 0) meta.push(genreNames.join(", "))
+---
+
+<Media
+  title={title}
+  description={description}
+  openUrl={openUrl}
+  path={path}
+  displayTitle={name}
+  year={year}
+  meta={meta}
+  overview={movie?.overview}
+  tagline={movie?.tagline}
+  backdropPath={movie?.backdrop_path}
+  posterPath={movie?.poster_path}
+  cast={movie?.credits?.cast ?? []}
+/>

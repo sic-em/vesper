@@ -1,0 +1,336 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@font-face {
+  font-family: "Union";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Union-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Union";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Union-Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Union";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Union-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Union";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Union-BoldItalic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Exposure";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/Exposure-Regular.otf") format("opentype");
+}
+@font-face {
+  font-family: "Exposure";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Exposure-Bold.otf") format("opentype");
+}
+@font-face {
+  font-family: "Exposure";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ExposureVAR-Italic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Exposure";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/Exposure-BoldItalic.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "Berkeley Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/IosevkaBerkeleyMono-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Berkeley Mono";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/IosevkaBerkeleyMono-Italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Berkeley Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/IosevkaBerkeleyMono-Medium.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Berkeley Mono";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/IosevkaBerkeleyMono-MediumItalic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Berkeley Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/IosevkaBerkeleyMono-SemiBold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Berkeley Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/IosevkaBerkeleyMono-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Berkeley Mono";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/IosevkaBerkeleyMono-BoldItalic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "GT Alpina";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/GTAlpina-Italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "SF Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/npm/sf-mono-webfont@1.0.0/sf-mono-regular.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "SF Mono";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/npm/sf-mono-webfont@1.0.0/sf-mono-regularitalic.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "SF Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/npm/sf-mono-webfont@1.0.0/sf-mono-medium.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "SF Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/npm/sf-mono-webfont@1.0.0/sf-mono-semibold.woff2")
+    format("woff2");
+}
+@font-face {
+  font-family: "SF Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/npm/sf-mono-webfont@1.0.0/sf-mono-bold.woff2")
+    format("woff2");
+}
+
+@theme inline {
+  --font-sans: "Union", "Helvetica Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    "SF Mono", "Berkeley Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-heading: "Exposure", Georgia, "Times New Roman", serif;
+  --font-accent: "Homemade Apple", cursive;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 8px;
+}
+
+:root {
+  --background: #121212;
+  --foreground: #fdfcfc;
+  --card: #302c2c;
+  --card-foreground: #fdfcfc;
+  --popover: #302c2c;
+  --popover-foreground: #fdfcfc;
+  --primary: #fdfcfc;
+  --primary-foreground: #201d1d;
+  --secondary: #302c2c;
+  --secondary-foreground: #fdfcfc;
+  --muted: #302c2c;
+  --muted-foreground: #9a9898;
+  --accent: #007aff;
+  --accent-foreground: #fdfcfc;
+  --destructive: #ff3b30;
+  --destructive-foreground: #fdfcfc;
+  --success: #30d158;
+  --warning: #ff9f0a;
+  --border: rgba(253, 252, 252, 0.12);
+  --input: rgba(253, 252, 252, 0.12);
+  --ring: #646262;
+  --radius: 4px;
+
+  --sidebar: #121212;
+  --sidebar-foreground: #fdfcfc;
+  --sidebar-primary: #fdfcfc;
+  --sidebar-primary-foreground: #201d1d;
+  --sidebar-accent: #302c2c;
+  --sidebar-accent-foreground: #fdfcfc;
+  --sidebar-border: rgba(253, 252, 252, 0.12);
+  --sidebar-ring: #646262;
+}
+
+.light {
+  --background: #fdfcfc;
+  --foreground: #201d1d;
+  --card: #f1eeee;
+  --card-foreground: #201d1d;
+  --popover: #f1eeee;
+  --popover-foreground: #201d1d;
+  --primary: #201d1d;
+  --primary-foreground: #fdfcfc;
+  --secondary: #f1eeee;
+  --secondary-foreground: #201d1d;
+  --muted: #f1eeee;
+  --muted-foreground: #6e6e73;
+  --accent: #007aff;
+  --accent-foreground: #fdfcfc;
+  --destructive: #ff3b30;
+  --destructive-foreground: #fdfcfc;
+  --success: #30d158;
+  --warning: #ff9f0a;
+  --border: rgba(15, 0, 0, 0.12);
+  --input: #f8f7f7;
+  --ring: #646262;
+
+  --sidebar: #fdfcfc;
+  --sidebar-foreground: #201d1d;
+  --sidebar-primary: #201d1d;
+  --sidebar-primary-foreground: #fdfcfc;
+  --sidebar-accent: #f1eeee;
+  --sidebar-accent-foreground: #201d1d;
+  --sidebar-border: rgba(15, 0, 0, 0.12);
+  --sidebar-ring: #646262;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--foreground) 22%, transparent);
+    color: var(--foreground);
+  }
+  html {
+    font-family: var(--font-mono);
+    font-feature-settings:
+      "liga" 1,
+      "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-weight: 400;
+    line-height: 1.5;
+    position: relative;
+  }
+  h1 {
+    font-size: 2.375rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  h2,
+  h3,
+  h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  a {
+    font-weight: 500;
+  }
+}
+
+@keyframes soft-blur-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.reveal {
+  animation: soft-blur-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm build:site && rm -rf .vercel/output && cp -R apps/site/.vercel/output .vercel/output",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- apps/site convex packages pnpm-lock.yaml package.json"
+}
