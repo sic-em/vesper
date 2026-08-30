@@ -1,9 +1,3 @@
-# Vesper
-
-A desktop streaming app for movies and TV. Electron + React on the front, [Convex](https://convex.dev) on the back, streams served through your own [Real-Debrid](https://real-debrid.com) account via Comet/Torrentio.
-
-Playback is fully native: the player demuxes in the renderer and decodes with hardware WebCodecs straight to a canvas. HDR10 works, subtitles (embedded, OpenSubtitles, or your own files) work, and you can hand a stream off to VLC, IINA, or mpv mid-watch.
-
 ## What you need
 
 - Node 22+ and pnpm 9
