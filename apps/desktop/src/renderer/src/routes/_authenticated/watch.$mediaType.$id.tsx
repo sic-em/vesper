@@ -863,6 +863,12 @@ function WatchPage(): React.JSX.Element {
         flashToast('Picture-in-picture unavailable')
         return
       }
+      // Before any frame is rendered the capture stream carries no data, so play() would
+      // stay pending forever (and reject with AbortError on unmount).
+      if ((engine.stats?.displayedFrames ?? 0) === 0) {
+        flashToast('Picture-in-picture needs playing video')
+        return
+      }
       let video = pipVideoRef.current
       if (!video) {
         video = document.createElement('video')
