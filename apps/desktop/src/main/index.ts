@@ -402,6 +402,10 @@ app.whenReady().then(() => {
     return BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false
   })
 
+  ipcMain.handle('devtools:toggle', (event) => {
+    event.sender.toggleDevTools()
+  })
+
   ipcMain.handle('externalPlayer:list', () => listExternalPlayers())
   ipcMain.handle(
     'externalPlayer:open',

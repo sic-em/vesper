@@ -4,6 +4,7 @@ import { PlaybackSection } from '@renderer/components/settings/playback-section'
 import { StorageSection } from '@renderer/components/settings/storage-section'
 import { IntegrationsSection } from '@renderer/components/settings/integrations-section'
 import { PrivacySection } from '@renderer/components/settings/privacy-section'
+import { DeveloperSection } from '@renderer/components/settings/developer-section'
 
 export const Route = createFileRoute('/_authenticated/settings')({
   component: SettingsPage
@@ -32,6 +33,9 @@ function SettingsPage(): React.JSX.Element {
         </Section>
         <Section title="Storage">
           <StorageSection />
+        </Section>
+        <Section title="Developer">
+          <DeveloperSection />
         </Section>
       </div>
     </div>
