@@ -17,6 +17,7 @@ import { StatsForNerds } from '@renderer/components/player/stats-for-nerds'
 import { PlayerToast } from '@renderer/components/player/player-toast'
 import { KeyboardShortcutsModal } from '@renderer/components/player/keyboard-shortcuts-modal'
 import { SkipSegmentButton } from '@renderer/components/player/skip-segment-button'
+import { PipPlaceholder } from '@renderer/components/player/pip-placeholder'
 import {
   readPlaybackSpeed,
   writePlaybackSpeed,
@@ -42,6 +43,7 @@ import { tmdbImage } from '@renderer/lib/tmdb'
 import type { EmbeddedTrack } from '@renderer/lib/use-subtitle-tracks'
 import type { AudioTrack } from '@renderer/lib/use-audio-tracks'
 import { usePlayerEngine } from '@renderer/hooks/use-player-engine'
+import { usePictureInPicture } from '@renderer/hooks/use-picture-in-picture'
 import { AudioMenu } from '@renderer/components/player/audio-menu'
 import { ExternalPlayerMenu } from '@renderer/components/player/external-player-menu'
 import {
@@ -118,8 +120,6 @@ function WatchPage(): React.JSX.Element {
   const tmdbId = Number(params.id)
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const pipVideoRef = useRef<HTMLVideoElement | null>(null)
-  const [pipActive, setPipActive] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [muted, setMuted] = useState(false)
   const lastSavedRef = useRef(0)
@@ -850,67 +850,16 @@ function WatchPage(): React.JSX.Element {
     }
   }, [])
 
-  // The player draws to a canvas (no <video> element), so PiP mirrors the canvas
-  // through a hidden captureStream-backed video.
-  const togglePip = async (): Promise<void> => {
-    try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture()
-        return
-      }
-      const canvas = canvasRef.current
-      if (!canvas || !document.pictureInPictureEnabled) {
-        flashToast('Picture-in-picture unavailable')
-        return
-      }
-      // Before any frame is rendered the capture stream carries no data, so play() would
-      // stay pending forever (and reject with AbortError on unmount).
-      if ((engine.stats?.displayedFrames ?? 0) === 0) {
-        flashToast('Picture-in-picture needs playing video')
-        return
-      }
-      let video = pipVideoRef.current
-      if (!video) {
-        video = document.createElement('video')
-        video.muted = true
-        video.playsInline = true
-        video.style.position = 'fixed'
-        video.style.left = '-9999px'
-        video.style.width = '1px'
-        video.addEventListener('enterpictureinpicture', () => setPipActive(true))
-        video.addEventListener('leavepictureinpicture', () => {
-          setPipActive(false)
-          const v = pipVideoRef.current
-          if (!v) return
-          v.pause()
-          const stream = v.srcObject as MediaStream | null
-          stream?.getTracks().forEach((t) => t.stop())
-          v.srcObject = null
-        })
-        document.body.appendChild(video)
-        pipVideoRef.current = video
-      }
-      if (!video.srcObject) video.srcObject = canvas.captureStream()
-      await video.play()
-      await video.requestPictureInPicture()
-    } catch (err) {
-      console.error('picture-in-picture failed', err)
-      flashToast('Picture-in-picture failed')
-    }
-  }
-
-  useEffect(() => {
-    return () => {
-      if (document.pictureInPictureElement) void document.exitPictureInPicture().catch(() => {})
-      const video = pipVideoRef.current
-      if (video) {
-        const stream = video.srcObject as MediaStream | null
-        stream?.getTracks().forEach((t) => t.stop())
-        video.remove()
-        pipVideoRef.current = null
-      }
-    }
-  }, [])
+  // The player draws to a canvas (no <video> element), so PiP runs off a mirrored capture stream.
+  const pip = usePictureInPicture({
+    canvasRef,
+    paused,
+    hasFrame,
+    play: engine.play,
+    pause: engine.pause,
+    repaint: engine.repaint,
+    onUnavailable: flashToast
+  })
 
   const seasonForPrevNext =
     search.mediaType === 'tv' && search.season != null ? search.season : null
@@ -982,6 +931,7 @@ function WatchPage(): React.JSX.Element {
       >
         <div className="app-drag pointer-events-auto absolute inset-x-0 top-0 z-40 h-12" />
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-contain" />
+        <PipPlaceholder visible={pip.active} onExit={() => void pip.toggle()} />
         <BufferOverlay
           backdropUrl={backdropUrl}
           logoUrl={logoUrl}
@@ -1027,8 +977,8 @@ function WatchPage(): React.JSX.Element {
             onSeek={seekTo}
             onVolumeChange={handleVolumeChange}
             onToggleMute={toggleMute}
-            onTogglePip={() => void togglePip()}
-            pipActive={pipActive}
+            onTogglePip={() => void pip.toggle()}
+            pipActive={pip.active}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
             showEpisodesButton={search.mediaType === 'tv'}

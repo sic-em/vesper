@@ -18,6 +18,7 @@ export interface PlayerEngine {
   pause(): void
   togglePause(): void
   seek(sec: number): void
+  repaint(): boolean
   setRate(r: number): void
   setVolume(v: number): void
   setMuted(m: boolean): void
@@ -110,6 +111,7 @@ export function usePlayerEngine(args: {
       else void c.play()
     },
     seek: (sec) => void controllerRef.current?.seek(sec),
+    repaint: () => controllerRef.current?.repaint() ?? false,
     setRate: (r) => controllerRef.current?.setRate(r),
     setVolume: (v) => controllerRef.current?.setVolume(v),
     setMuted: (m) => controllerRef.current?.setMuted(m),
