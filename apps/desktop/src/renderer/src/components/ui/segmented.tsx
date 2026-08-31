@@ -41,7 +41,7 @@ export function Segmented<T extends string>({
           aria-selected={o.value === value}
           onClick={() => onChange(o.value)}
           className={cn(
-            'relative z-10 flex h-6 flex-1 items-center justify-center rounded-full px-3.5 text-[12px] font-semibold whitespace-nowrap outline-none transition-colors duration-200',
+            'relative z-10 flex h-6 flex-1 items-center justify-center rounded-full px-3.5 text-[12px] font-medium whitespace-nowrap outline-none transition-colors duration-200',
             o.value === value ? 'text-black' : 'text-text-tertiary'
           )}
         >

@@ -3,6 +3,7 @@ import { Popover } from '@base-ui/react/popover'
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, m as motion } from 'motion/react'
 import { cn } from '@renderer/lib/cn'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 import { Ring } from '@renderer/components/ui/spinner'
 import { DialSlider } from '@renderer/components/ui/dial-slider'
 import { CloseIcon, CheckIcon, PlusIcon } from '@renderer/components/icons'
@@ -97,8 +98,8 @@ export function SubtitleMenu({
       <Popover.Portal>
         <Popover.Positioner side="top" sideOffset={42} align="center" className="z-[100]">
           <Popover.Popup
-            className={cn('w-[360px] overflow-hidden rounded-[14px] p-2 backdrop-blur-2xl')}
-            style={{ backgroundColor: '#141414EB' }}
+            className={cn('w-[360px] overflow-hidden p-2 backdrop-blur-2xl')}
+            style={{ backgroundColor: '#141414EB', ...squircleStyle('frame-sm') }}
           >
             <Tabs value={tab} onChange={setTab} />
             <div className="h-[440px] overflow-hidden">

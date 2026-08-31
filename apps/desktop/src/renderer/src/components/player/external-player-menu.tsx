@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Popover } from '@base-ui/react/popover'
 import { cn } from '@renderer/lib/cn'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 import vlcIcon from './external-player-icons/vlc.svg'
 import mpvIcon from './external-player-icons/mpv.svg'
 import iinaIcon from './external-player-icons/iina.png'
@@ -68,8 +69,8 @@ export function ExternalPlayerMenu({
       <Popover.Portal>
         <Popover.Positioner side="top" sideOffset={42} align="center" className="z-[100]">
           <Popover.Popup
-            className={cn('w-[240px] overflow-hidden rounded-[14px] p-2 backdrop-blur-2xl')}
-            style={{ backgroundColor: '#141414EB' }}
+            className={cn('w-[240px] overflow-hidden p-2 backdrop-blur-2xl')}
+            style={{ backgroundColor: '#141414EB', ...squircleStyle('frame-sm') }}
           >
             <div className="px-3 pt-2 pb-1">
               <span className="text-[11px] leading-[14px] font-bold tracking-[0.08em] text-white/50 uppercase">

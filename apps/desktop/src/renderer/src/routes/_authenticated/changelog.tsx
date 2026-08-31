@@ -13,7 +13,7 @@ function ChangelogPage(): React.JSX.Element {
           What's new
         </h1>
       </header>
-      <div className="mx-auto w-full max-w-2xl pt-8">
+      <div className="w-full pt-8">
         <ChangelogList />
       </div>
     </div>

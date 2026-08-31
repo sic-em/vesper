@@ -10,6 +10,7 @@ import { tmdbImage } from '@renderer/lib/tmdb'
 import { cn } from '@renderer/lib/cn'
 import { api } from '@convex/_generated/api'
 import type { Id } from '@convex/_generated/dataModel'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface AddToListsPopoverProps {
   mediaType: 'movie' | 'tv'
@@ -32,7 +33,10 @@ export function AddToListsPopover({
       <Popover.Trigger render={children as React.ReactElement} />
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="start" sideOffset={8} className="z-[100]">
-          <Popover.Popup className="z-50 w-[300px] overflow-hidden rounded-xl bg-surface-2 outline-none">
+          <Popover.Popup
+            className="z-50 w-[300px] overflow-hidden border border-white/[0.06] bg-surface-2 outline-none"
+            style={squircleStyle('frame-sm')}
+          >
             {open ? (
               <PopoverBody
                 mediaType={mediaType}

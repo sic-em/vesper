@@ -1,5 +1,6 @@
 import { Select as BaseSelect } from '@base-ui/react/select'
 import { cn } from '@renderer/lib/cn'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 export interface SelectOption {
   value: string
@@ -26,7 +27,7 @@ export function Select({
       <BaseSelect.Trigger
         aria-label={ariaLabel}
         className={cn(
-          'inline-flex h-8 min-w-[140px] shrink-0 items-center justify-between gap-2 rounded-md bg-white/[0.06] px-3 text-[13px] leading-4 font-medium text-text outline-none data-[popup-open]:bg-white/[0.10]',
+          'inline-flex h-8 min-w-[140px] shrink-0 items-center justify-between gap-2 rounded-full bg-white/[0.06] px-3.5 text-[13px] leading-4 font-medium text-text outline-none data-[popup-open]:bg-white/[0.10]',
           className
         )}
       >
@@ -48,8 +49,9 @@ export function Select({
         >
           <BaseSelect.Popup
             className={cn(
-              'min-w-[var(--anchor-width)] overflow-hidden rounded-xl bg-surface-2 outline-none shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
+              'min-w-[var(--anchor-width)] overflow-hidden border border-white/[0.06] bg-surface-2 outline-none shadow-[0_4px_16px_rgba(0,0,0,0.3)]'
             )}
+            style={squircleStyle('frame-sm')}
           >
             <BaseSelect.List className="flex max-h-[320px] flex-col gap-1 overflow-y-auto p-1.5">
               {options.map((o) => (

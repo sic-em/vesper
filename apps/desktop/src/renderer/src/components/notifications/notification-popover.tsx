@@ -8,6 +8,7 @@ import { NotificationRow } from './notification-row'
 import { resolveStream } from '@renderer/lib/streams'
 import { api } from '@convex/_generated/api'
 import type { Id } from '@convex/_generated/dataModel'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface NotifData {
   _id: Id<'notifications'>
@@ -132,7 +133,10 @@ export function NotificationPopover(): React.JSX.Element {
       />
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8} className="z-[100]">
-          <Popover.Popup className="flex w-[360px] shadow-[0_8px_24px_rgba(0,0,0,0.4)] flex-col overflow-hidden rounded-xl bg-surface-2 outline-none">
+          <Popover.Popup
+            className="flex w-[360px] flex-col overflow-hidden border border-white/[0.06] bg-surface-2 shadow-[0_8px_24px_rgba(0,0,0,0.4)] outline-none"
+            style={squircleStyle('frame-sm')}
+          >
             <Header unread={unread} canMarkAll={unread > 0} onMarkAll={() => markAllRead()} />
             <div className="flex-1">
               {loading ? <SkeletonList /> : null}

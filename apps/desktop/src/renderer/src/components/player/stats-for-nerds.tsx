@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, m as motion } from 'motion/react'
 import type { PlayerStats } from '@renderer/lib/player/types'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface Props {
   visible: boolean
@@ -135,7 +136,8 @@ export function StatsForNerds({
       {visible && s ? (
         <motion.div
           key="stats"
-          className="pointer-events-auto absolute top-20 right-6 z-40 max-w-[440px] min-w-[300px] rounded-lg bg-black/72 px-3 py-2.5 font-mono text-[11px] leading-[16px] text-white/95 backdrop-blur-md"
+          className="pointer-events-auto absolute top-20 right-6 z-40 max-w-[440px] min-w-[300px] bg-black/72 px-3 py-2.5 font-mono text-[11px] leading-[16px] text-white/95 backdrop-blur-md"
+          style={squircleStyle('inset-sm')}
           initial={{ opacity: 0, x: 4 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 4 }}

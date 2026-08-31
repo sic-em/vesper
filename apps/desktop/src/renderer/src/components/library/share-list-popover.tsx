@@ -7,6 +7,7 @@ import { Avatar } from '@renderer/components/ui/avatar'
 import { cn } from '@renderer/lib/cn'
 import { api } from '@convex/_generated/api'
 import type { Id } from '@convex/_generated/dataModel'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface Member {
   userId: Id<'users'>
@@ -45,7 +46,10 @@ export function ShareListPopover({ list, children }: ShareListPopoverProps): Rea
       <Popover.Trigger render={children as React.ReactElement} />
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8} className="z-[100]">
-          <Popover.Popup className="flex w-[360px] shadow-[0_8px_24px_rgba(0,0,0,0.4)] flex-col overflow-hidden rounded-xl bg-surface-2 outline-none">
+          <Popover.Popup
+            className="flex w-[360px] flex-col overflow-hidden border border-white/[0.06] bg-surface-2 shadow-[0_8px_24px_rgba(0,0,0,0.4)] outline-none"
+            style={squircleStyle('frame-sm')}
+          >
             {open ? <Body list={list} friendsQuery={friendsQuery} /> : null}
           </Popover.Popup>
         </Popover.Positioner>

@@ -13,6 +13,7 @@ import { CropModal } from '@renderer/components/settings/crop-modal'
 import { Ring } from '@renderer/components/ui/spinner'
 import { ALLOWED_TYPES, MAX_UPLOAD_BYTES, uploadListCover } from '@renderer/lib/image-upload'
 import { cn } from '@renderer/lib/cn'
+import { SquircleSurface } from '@renderer/components/ui/squircle-surface'
 import { api } from '@convex/_generated/api'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 
@@ -54,9 +55,11 @@ export function ListFormModal({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Popup
           aria-label={mode === 'edit' ? 'Edit list' : 'New list'}
-          className="dm-elevation-6 fixed top-1/2 left-1/2 z-50 w-[440px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-surface-2"
+          className="fixed top-1/2 left-1/2 z-50 w-[440px] -translate-x-1/2 -translate-y-1/2 outline-none"
         >
-          {open ? <ModalBody mode={mode} list={list} onClose={() => onOpenChange(false)} /> : null}
+          <SquircleSurface variant="frame" className="p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+            {open ? <ModalBody mode={mode} list={list} onClose={() => onOpenChange(false)} /> : null}
+          </SquircleSurface>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
@@ -182,8 +185,8 @@ function ModalBody({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
-      <header className="flex items-center justify-between px-5 pt-5 pb-3">
-        <Dialog.Title className="text-[18px] leading-6 font-semibold text-text">
+      <header className="flex items-center justify-between pt-1 pb-1.5 pl-2.5 pr-0.5">
+        <Dialog.Title className="text-[15px] leading-5 font-medium text-text">
           {isEdit ? 'Edit list' : 'New list'}
         </Dialog.Title>
         <IconButton variant="ghost" size="md" aria-label="Close" onClick={onClose} type="button">
@@ -191,7 +194,7 @@ function ModalBody({
         </IconButton>
       </header>
 
-      <div className="flex flex-col gap-4 px-5 pb-4">
+      <SquircleSurface variant="inset" className="gap-4 px-3.5 py-3.5">
         <div className="flex gap-3">
           <CoverThumb
             previewUrl={coverPreviewUrl}
@@ -253,9 +256,9 @@ function ModalBody({
             {submitError}
           </div>
         ) : null}
-      </div>
+      </SquircleSurface>
 
-      <footer className="flex justify-end gap-2 border-t border-white/[0.06] px-5 py-4">
+      <footer className="flex justify-end gap-2 px-1 pt-2 pb-0.5">
         <Button type="button" variant="secondary" size="md" onClick={onClose}>
           Cancel
         </Button>
@@ -297,7 +300,7 @@ function CoverThumb({
           disabled={busy}
           className={cn(
             'group relative flex size-12 items-center justify-center overflow-hidden rounded-[14px] outline-none transition-colors',
-            hasCover ? 'bg-surface' : 'bg-surface text-text-tertiary hover:text-text'
+            hasCover ? 'bg-white/[0.06]' : 'bg-white/[0.06] text-text-tertiary hover:text-text'
           )}
           style={
             hasCover && previewUrl
@@ -327,7 +330,7 @@ function CoverThumb({
             onClick={() => void onRemove()}
             aria-label="Remove cover"
             disabled={busy}
-            className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-black text-white outline-none ring-2 ring-surface-2 transition-transform hover:scale-110"
+            className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-black text-white outline-none ring-2 ring-surface transition-transform hover:scale-110"
           >
             <CloseIcon className="size-3" />
           </button>
@@ -360,7 +363,7 @@ function UploadGlyph(): React.JSX.Element {
 
 function inputClass(hasError: boolean): string {
   return cn(
-    'h-12 w-full rounded-[14px] bg-surface px-[14px] text-[14px] leading-5 font-medium text-text outline-none placeholder:text-text-muted',
+    'h-12 w-full rounded-[14px] bg-white/[0.06] px-[14px] text-[14px] leading-5 font-medium text-text outline-none placeholder:text-text-muted',
     hasError && 'ring-1 ring-red-500/70'
   )
 }
@@ -396,7 +399,7 @@ function PrivacyToggle({
   onChange: (v: boolean) => void
 }): React.JSX.Element {
   return (
-    <div className="flex items-center gap-3 rounded-[14px] bg-surface px-3 py-2.5">
+    <div className="flex items-center gap-3 rounded-[14px] bg-white/[0.04] px-3 py-2.5">
       <div className="flex size-9 items-center justify-center rounded-lg bg-white/[0.06] text-text-tertiary">
         <LockIcon className="size-4" />
       </div>
