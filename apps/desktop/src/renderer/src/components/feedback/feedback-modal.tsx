@@ -11,11 +11,14 @@ import { Select } from '@renderer/components/ui/select'
 import { CloseIcon, CmdIcon, ReturnIcon } from '@renderer/components/icons'
 import { isMac } from '@renderer/lib/platform'
 import { cn } from '@renderer/lib/cn'
+import { SQUIRCLE_CLIP } from '@renderer/lib/squircle'
 import { useErrorShake } from '@renderer/hooks/use-error-shake'
 import { api } from '@convex/_generated/api'
 
 const MIN_MSG = 5
 const MAX_MSG = 4000
+
+const POP = { type: 'spring', stiffness: 400, damping: 26 } as const
 
 const feedbackSchema = z.object({
   message: z
@@ -61,7 +64,7 @@ function AdminStack({
       {shown.map((a, i) => (
         <span
           key={a.username}
-          className="-ml-2 inline-block rounded-full ring-[3px] ring-[#1a1a1a] first:ml-0"
+          className="-ml-2 inline-block rounded-full ring-[3px] ring-surface first:ml-0"
           style={{ zIndex: shown.length - i }}
         >
           <Avatar
@@ -75,7 +78,7 @@ function AdminStack({
       ))}
       {extra > 0 ? (
         <span
-          className="-ml-2 inline-flex size-11 items-center justify-center rounded-full bg-surface-3 text-[12px] font-semibold text-text ring-[3px] ring-[#1a1a1a]"
+          className="-ml-2 inline-flex size-11 items-center justify-center rounded-full bg-surface-3 text-[12px] font-medium text-text ring-[3px] ring-surface"
           aria-label={`${extra} more`}
         >
           +{extra}
@@ -172,118 +175,143 @@ export function FeedbackModal({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Popup
           aria-label="Send feedback"
-          className="fixed top-1/2 left-1/2 z-50 flex h-[360px] w-[560px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-[#1a1a1a] shadow-[0_24px_64px_rgba(0,0,0,0.5)] outline-none"
+          className="fixed top-1/2 left-1/2 z-50 w-[560px] -translate-x-1/2 -translate-y-1/2 outline-none"
         >
-          <button
-            type="button"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close"
-            className="absolute top-3 right-3 z-10 flex size-7 items-center justify-center rounded-md text-text-tertiary outline-none transition-colors duration-150 ease-out hover:bg-white/[0.08] hover:text-white active:opacity-70"
+          {/* Squircle frame holding a recessed inset — the surface anatomy from oa-design,
+              in Vesper's palette: frame surface-2, inset recessed to surface. */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={POP}
+            className="flex h-[380px] flex-col rounded-[26px] border border-white/[0.06] bg-surface-2 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)] [--card-clip-handle:2.25px] [--card-clip-radius:14px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]"
+            style={{ '--card-clip-path': SQUIRCLE_CLIP } as React.CSSProperties}
           >
-            <CloseIcon className="size-3" />
-          </button>
-          <AnimatePresence mode="wait" initial={false}>
-            {state === 'sent' ? (
-              <motion.div
-                key="thanks"
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center"
-              >
-                {admins && admins.length > 0 ? <AdminStack admins={admins} /> : null}
-                <h2 className="text-[22px] leading-7 font-semibold text-text">Thank you!</h2>
-                <p className="text-[13px] leading-5 font-medium text-text-tertiary">
-                  We appreciate every message that helps us improve Vesper.
-                </p>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                className="flex h-full flex-col"
-              >
-                <div className="flex items-center justify-between gap-2 px-5 pt-4">
-                  <Controller
-                    name="type"
-                    control={control}
-                    render={({ field }) => (
-                      <Select
-                        ariaLabel="Feedback type"
-                        value={field.value}
-                        onChange={(v) => field.onChange(v as FeedbackType)}
-                        options={TYPE_OPTIONS}
-                      />
-                    )}
-                  />
-                </div>
-                <span
-                  ref={shakeRef}
-                  className={cn('t-input flex flex-1 flex-col', shownError && 'is-error')}
+            <AnimatePresence mode="wait" initial={false}>
+              {state === 'sent' ? (
+                <motion.div
+                  key="thanks"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex min-h-0 flex-1 flex-col"
                 >
-                  <textarea
-                    autoFocus
-                    {...register('message')}
-                    onKeyDown={onKey}
-                    placeholder="What's on your mind?"
-                    className="scroll-hide flex-1 resize-none bg-transparent px-5 pt-3 pb-4 text-[14px] leading-5 font-medium text-text outline-none placeholder:text-text-tertiary"
-                  />
-                </span>
-                <AnimatePresence>
-                  {serverError ? (
-                    <motion.div
-                      key="error"
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}
-                      className="px-5 pb-2"
+                  <div className="flex shrink-0 items-center justify-end pb-1.5 pl-2.5 pr-1 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => onOpenChange(false)}
+                      aria-label="Close"
+                      className="flex size-7 items-center justify-center rounded-full text-text-tertiary outline-none transition-colors duration-150 ease-out hover:bg-white/[0.08] hover:text-white active:opacity-70"
                     >
-                      <p className="line-clamp-2 text-[12px] leading-4 font-medium text-[#f08c8c]">
-                        {serverError}
-                      </p>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-                <div className="flex items-center justify-between gap-3 border-t border-white/[0.04] px-4 py-3">
-                  <span
-                    className={cn(
-                      'text-[11px] leading-4 font-medium',
-                      fieldError && isSubmitted ? 'text-red-400' : 'text-text-muted'
-                    )}
-                  >
-                    {fieldError && isSubmitted
-                      ? fieldError
-                      : `${message.trim().length} / ${MAX_MSG}`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void onSubmit()}
-                    disabled={!canSend}
-                    className={cn(
-                      'inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-[13px] leading-4 font-semibold text-black outline-none transition-opacity disabled:opacity-40'
-                    )}
-                  >
-                    <span className="leading-none whitespace-nowrap">
-                      {state === 'sending' ? 'Sending…' : 'Send to the Vesper team'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-black/45" aria-hidden>
-                      {isMac ? (
-                        <CmdIcon className="size-3.5" />
-                      ) : (
-                        <span className="text-[11px] font-semibold">Ctrl</span>
+                      <CloseIcon className="size-3" />
+                    </button>
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-[20px] border border-white/[0.05] bg-surface px-8 text-center [--card-clip-radius:12px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]">
+                    {admins && admins.length > 0 ? <AdminStack admins={admins} /> : null}
+                    <h2 className="text-[22px] leading-7 font-medium text-text">Thank you!</h2>
+                    <p className="text-[13px] leading-5 font-medium text-text-tertiary">
+                      We appreciate every message that helps us improve Vesper.
+                    </p>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex min-h-0 flex-1 flex-col"
+                >
+                  <div className="flex shrink-0 items-center justify-between gap-2 pb-1.5 pl-2.5 pr-1 pt-1">
+                    <Controller
+                      name="type"
+                      control={control}
+                      render={({ field }) => (
+                        <Select
+                          ariaLabel="Feedback type"
+                          value={field.value}
+                          onChange={(v) => field.onChange(v as FeedbackType)}
+                          options={TYPE_OPTIONS}
+                        />
                       )}
-                      <ReturnIcon className="size-3.5" />
+                    />
+                    <button
+                      type="button"
+                      onClick={() => onOpenChange(false)}
+                      aria-label="Close"
+                      className="flex size-7 items-center justify-center rounded-full text-text-tertiary outline-none transition-colors duration-150 ease-out hover:bg-white/[0.08] hover:text-white active:opacity-70"
+                    >
+                      <CloseIcon className="size-3" />
+                    </button>
+                  </div>
+                  <span
+                    ref={shakeRef}
+                    className={cn(
+                      't-input flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-white/[0.05] bg-surface [--card-clip-radius:12px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]',
+                      shownError && 'is-error'
+                    )}
+                  >
+                    <textarea
+                      autoFocus
+                      {...register('message')}
+                      onKeyDown={onKey}
+                      placeholder="What's on your mind?"
+                      className="scroll-hide flex-1 resize-none bg-transparent px-4 pt-3.5 pb-3 text-[14px] leading-5 font-medium text-text outline-none placeholder:text-text-tertiary"
+                    />
+                    <AnimatePresence>
+                      {serverError ? (
+                        <motion.div
+                          key="error"
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}
+                          className="px-4 pb-3"
+                        >
+                          <p className="line-clamp-2 text-[12px] leading-4 font-medium text-[#f08c8c]">
+                            {serverError}
+                          </p>
+                        </motion.div>
+                      ) : null}
+                    </AnimatePresence>
+                  </span>
+                  <div className="flex shrink-0 items-center justify-between gap-3 px-2.5 pt-2 pb-1">
+                    <span
+                      className={cn(
+                        'text-[11px] leading-4 font-medium',
+                        fieldError && isSubmitted ? 'text-red-400' : 'text-text-muted'
+                      )}
+                    >
+                      {fieldError && isSubmitted
+                        ? fieldError
+                        : `${message.trim().length} / ${MAX_MSG}`}
                     </span>
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                    <button
+                      type="button"
+                      onClick={() => void onSubmit()}
+                      disabled={!canSend}
+                      className={cn(
+                        'inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[13px] leading-4 font-medium text-black outline-none transition-opacity disabled:opacity-40'
+                      )}
+                    >
+                      <span className="leading-none whitespace-nowrap">
+                        {state === 'sending' ? 'Sending…' : 'Send to the Vesper team'}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-black/45" aria-hidden>
+                        {isMac ? (
+                          <CmdIcon className="size-3.5" />
+                        ) : (
+                          <span className="text-[11px] font-medium">Ctrl</span>
+                        )}
+                        <ReturnIcon className="size-3.5" />
+                      </span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
