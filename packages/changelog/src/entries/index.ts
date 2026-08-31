@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import Entry_1_3_0 from './1.3.0.mdx'
 import Entry_1_5_0 from './1.5.0.mdx'
+import Entry_1_6_0 from './1.6.0.mdx'
 
 export interface ChangelogEntry {
   version: string
@@ -11,6 +12,12 @@ export interface ChangelogEntry {
 }
 
 export const entries: ChangelogEntry[] = [
+  {
+    version: '1.6.0',
+    date: '2026-08-31',
+    summary: 'A fresh look for feedback and updates, and Discord presence that follows VLC.',
+    body: Entry_1_6_0
+  },
   {
     version: '1.5.0',
     date: '2026-08-30',
