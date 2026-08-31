@@ -4,7 +4,7 @@ import Entry_1_5_0 from './1.5.0.mdx'
 import Entry_1_6_0 from './1.6.0.mdx'
 import Entry_1_7_0 from './1.7.0.mdx'
 import Entry_1_8_0 from './1.8.0.mdx'
-import Entry_1_8_1 from './1.8.1.mdx'
+import Entry_1_8_2 from './1.8.2.mdx'
 
 export interface ChangelogEntry {
   version: string
@@ -16,10 +16,10 @@ export interface ChangelogEntry {
 
 export const entries: ChangelogEntry[] = [
   {
-    version: '1.8.1',
+    version: '1.8.2',
     date: '2026-08-31',
     summary: 'Streams now use Vesper’s own Comet service for a more reliable source connection.',
-    body: Entry_1_8_1
+    body: Entry_1_8_2
   },
   {
     version: '1.8.0',
