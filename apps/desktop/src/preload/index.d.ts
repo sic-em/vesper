@@ -12,6 +12,7 @@ export interface DiscordActivity {
 export interface VesperApi {
   window: {
     minimize: () => Promise<void>
+    restore: () => Promise<void>
     toggleMaximize: () => Promise<void>
     close: () => Promise<void>
     setFullScreen: (flag: boolean) => Promise<void>

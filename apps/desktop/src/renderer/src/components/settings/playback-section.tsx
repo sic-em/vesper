@@ -8,7 +8,14 @@ import {
   writeAutoShow
 } from '@renderer/lib/subtitle-prefs'
 import { readAudioPreferredLang, writeAudioLastLang } from '@renderer/lib/audio-prefs'
-import { readSkipButtonsEnabled, writeSkipButtonsEnabled } from '@renderer/lib/player-prefs'
+import {
+  readSkipButtonsEnabled,
+  writeSkipButtonsEnabled,
+  readAutoplayNextEnabled,
+  writeAutoplayNextEnabled,
+  readPipMinimizeEnabled,
+  writePipMinimizeEnabled
+} from '@renderer/lib/player-prefs'
 import { readNotifSoundEnabled, writeNotifSoundEnabled } from '@renderer/lib/notification-prefs'
 import { isHevcSupported, isWindows } from '@renderer/lib/platform'
 
@@ -54,6 +61,8 @@ export function PlaybackSection(): React.JSX.Element {
   const [subLang, setSubLang] = useState(() => readSubLastLang() ?? 'en')
   const [autoShow, setAutoShow] = useState(() => readAutoShow())
   const [skipButtons, setSkipButtons] = useState(() => readSkipButtonsEnabled())
+  const [autoplayNext, setAutoplayNext] = useState(() => readAutoplayNextEnabled())
+  const [pipMinimize, setPipMinimize] = useState(() => readPipMinimizeEnabled())
   const [notifSound, setNotifSound] = useState(() => readNotifSoundEnabled())
 
   const showHevcNotice = isWindows && !isHevcSupported()
@@ -112,6 +121,24 @@ export function PlaybackSection(): React.JSX.Element {
         onChange={(v) => {
           setSkipButtons(v)
           writeSkipButtonsEnabled(v)
+        }}
+      />
+      <ToggleRow
+        title="Autoplay next episode"
+        description="Roll into the next episode at the credits, and check in after a few unattended ones."
+        value={autoplayNext}
+        onChange={(v) => {
+          setAutoplayNext(v)
+          writeAutoplayNextEnabled(v)
+        }}
+      />
+      <ToggleRow
+        title="Minimize during picture-in-picture"
+        description="Tuck the main window away while playback is in the floating window, and bring it back after."
+        value={pipMinimize}
+        onChange={(v) => {
+          setPipMinimize(v)
+          writePipMinimizeEnabled(v)
         }}
       />
       <ToggleRow

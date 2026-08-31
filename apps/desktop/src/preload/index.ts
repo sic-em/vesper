@@ -5,6 +5,7 @@ import type { VesperApi } from './index.d'
 const api = {
   window: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
+    restore: () => ipcRenderer.invoke('window:restore'),
     toggleMaximize: () => ipcRenderer.invoke('window:toggleMaximize'),
     close: () => ipcRenderer.invoke('window:close'),
     setFullScreen: (flag: boolean) => ipcRenderer.invoke('window:setFullScreen', flag),

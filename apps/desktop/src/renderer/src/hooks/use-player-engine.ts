@@ -7,6 +7,7 @@ export interface PlayerEngine {
   timePos: number
   duration: number
   paused: boolean
+  ended: boolean
   buffering: boolean
   buffered: TimeRange[]
   videoTracks: PlayerTrack[]
@@ -14,6 +15,8 @@ export interface PlayerEngine {
   subtitleTracks: PlayerTrack[]
   stats: PlayerStats | null
   error: PlayerError | null
+  /** The url the state above describes, once it is loaded. Null while a new one is being set up. */
+  loadedUrl: string | null
   play(): void
   pause(): void
   togglePause(): void
@@ -43,6 +46,7 @@ export function usePlayerEngine(args: {
   const [timePos, setTimePos] = useState(0)
   const [duration, setDuration] = useState(0)
   const [paused, setPaused] = useState(true)
+  const [ended, setEnded] = useState(false)
   const [buffering, setBuffering] = useState(false)
   const [buffered, setBuffered] = useState<TimeRange[]>([])
   const [videoTracks, setVideoTracks] = useState<PlayerTrack[]>([])
@@ -50,12 +54,28 @@ export function usePlayerEngine(args: {
   const [subtitleTracks, setSubtitleTracks] = useState<PlayerTrack[]>([])
   const [stats, setStats] = useState<PlayerStats | null>(null)
   const [error, setError] = useState<PlayerError | null>(null)
+  const [loadedUrl, setLoadedUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!url || !canvas) return
 
+    // Every reading below belongs to the stream being replaced, and the new controller will not
+    // correct them until it has loaded — seconds of network away. Anything reading position or
+    // duration in between (progress saving, completion, autoplay) would be answering about the
+    // stream the viewer just left.
     setError(null)
+    setEnded(false)
+    setLoadedUrl(null)
+    setTimePos(startSec ?? 0)
+    setDuration(0)
+    setBuffered([])
+    setStats(null)
+    setVideoTracks([])
+    setAudioTracks([])
+    setSubtitleTracks([])
+
+    let cancelled = false
     const controller = new PlayerController({ url, canvas, startSec })
     controllerRef.current = controller
 
@@ -65,6 +85,7 @@ export function usePlayerEngine(args: {
       controller.on('buffered', setBuffered),
       controller.on('statechange', (s) => {
         setPaused(s === 'paused' || s === 'idle' || s === 'ended' || s === 'error')
+        setEnded(s === 'ended')
         setBuffering(s === 'buffering' || s === 'loading')
       }),
       controller.on('tracks', (t) => {
@@ -76,9 +97,14 @@ export function usePlayerEngine(args: {
       controller.on('error', setError)
     ]
 
-    void controller.load().then(() => controller.play())
+    void controller.load().then(() => {
+      if (cancelled) return
+      setLoadedUrl(url)
+      controller.play()
+    })
 
     return () => {
+      cancelled = true
       for (const off of offs) off()
       controller.destroy()
       controllerRef.current = null
@@ -95,6 +121,7 @@ export function usePlayerEngine(args: {
     timePos,
     duration,
     paused,
+    ended,
     buffering,
     buffered,
     videoTracks,
@@ -102,6 +129,7 @@ export function usePlayerEngine(args: {
     subtitleTracks,
     stats,
     error,
+    loadedUrl,
     play: () => controllerRef.current?.play(),
     pause: () => controllerRef.current?.pause(),
     togglePause: () => {
