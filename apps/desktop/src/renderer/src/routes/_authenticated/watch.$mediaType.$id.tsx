@@ -54,7 +54,7 @@ import {
   writeSubtitleStyle,
   type SubtitleStyle
 } from '@renderer/lib/subtitle-prefs'
-import { readAudioLastLang, writeAudioLastLang } from '@renderer/lib/audio-prefs'
+import { readAudioPreferredLang, writeAudioLastLang } from '@renderer/lib/audio-prefs'
 import { ensureScrape } from '@renderer/lib/stream-orchestrator'
 import { resolveStreamUrl } from '@renderer/lib/resolve-stream'
 import {
@@ -212,6 +212,7 @@ function WatchPage(): React.JSX.Element {
       channels: t.channels ? `${t.channels}` : undefined,
       codec: t.codec,
       isDefault: !!t.isDefault,
+      decodable: t.decodable,
       source: 'video' as const,
       index: i
     }))
@@ -312,9 +313,11 @@ function WatchPage(): React.JSX.Element {
   useEffect(() => {
     if (audioAutoAppliedRef.current) return
     if (audio.tracks.length <= 1) return
-    const pref = normalizeLangCode(readAudioLastLang())
+    const pref = normalizeLangCode(readAudioPreferredLang())
     if (!pref) return
-    const match = audio.tracks.find((t) => normalizeLangCode(t.lang) === pref)
+    // Language preference must never override decodability: the English track on a remux is
+    // often TrueHD or DTS-HD, which WebCodecs cannot decode, and switching to it is silence.
+    const match = audio.tracks.find((t) => t.decodable && normalizeLangCode(t.lang) === pref)
     if (match) {
       audio.setSelected(match.id)
       audioAutoAppliedRef.current = true

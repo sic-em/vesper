@@ -7,7 +7,7 @@ import {
   readAutoShow,
   writeAutoShow
 } from '@renderer/lib/subtitle-prefs'
-import { readAudioLastLang, writeAudioLastLang } from '@renderer/lib/audio-prefs'
+import { readAudioPreferredLang, writeAudioLastLang } from '@renderer/lib/audio-prefs'
 import { readSkipButtonsEnabled, writeSkipButtonsEnabled } from '@renderer/lib/player-prefs'
 import { readNotifSoundEnabled, writeNotifSoundEnabled } from '@renderer/lib/notification-prefs'
 import { isHevcSupported, isWindows } from '@renderer/lib/platform'
@@ -50,7 +50,7 @@ const LANGS: LangOption[] = [
 ]
 
 export function PlaybackSection(): React.JSX.Element {
-  const [audioLang, setAudioLang] = useState(() => readAudioLastLang() ?? 'en')
+  const [audioLang, setAudioLang] = useState(() => readAudioPreferredLang())
   const [subLang, setSubLang] = useState(() => readSubLastLang() ?? 'en')
   const [autoShow, setAutoShow] = useState(() => readAutoShow())
   const [skipButtons, setSkipButtons] = useState(() => readSkipButtonsEnabled())
