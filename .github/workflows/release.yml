@@ -96,7 +96,8 @@ jobs:
           if-no-files-found: error
 
   prune-old-versions:
-    # Keep only the version we just published (plus the latest*.yml feed files) in R2.
+    # Keep the version we just published, the newest previous version (so delta
+    # updates still work), and the latest*.yml feed files in R2.
     needs: [build-mac, build-win]
     if: github.event_name == 'push' && needs.build-mac.result == 'success' && needs.build-win.result == 'success'
     runs-on: ubuntu-latest
@@ -110,12 +111,16 @@ jobs:
       - name: Delete artifacts from previous versions
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          echo "Keeping version $VERSION and latest*.yml"
-          aws s3 ls "s3://mirae/release/" | awk '{print $NF}' | while read -r name; do
+          NAMES=$(aws s3 ls "s3://mirae/release/" | awk '{print $NF}')
+          PREV=$(printf '%s\n' "$NAMES" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -uV | grep -vx "$VERSION" | tail -n 1)
+          PREV="${PREV:-__none__}"
+          echo "Keeping version $VERSION, previous $PREV, and latest*.yml"
+          printf '%s\n' "$NAMES" | while read -r name; do
             [ -z "$name" ] && continue
             case "$name" in
               latest*.yml) echo "keep  $name" ;;
               *"-$VERSION."* | *"-$VERSION-"*) echo "keep  $name" ;;
+              *"-$PREV."* | *"-$PREV-"*) echo "keep  $name" ;;
               *) echo "prune $name" && aws s3 rm "s3://mirae/release/$name" ;;
             esac
           done
