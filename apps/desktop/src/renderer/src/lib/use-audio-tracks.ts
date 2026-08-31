@@ -11,6 +11,8 @@ export interface AudioTrack {
   isDefault: boolean
   source: 'video' | 'hls'
   index: number
+  /** WebCodecs cannot decode every codec a container carries; an undecodable track is silence. */
+  decodable: boolean
 }
 
 interface NativeAudioTrack {
@@ -104,6 +106,7 @@ function collect(video: HTMLVideoElement, hls: Hls | null): AudioTrack[] {
         channels: attrs.CHANNELS,
         codec: (t as unknown as { audioCodec?: string }).audioCodec,
         isDefault: !!t.default,
+        decodable: true,
         source: 'hls',
         index: i
       })
@@ -120,6 +123,7 @@ function collect(video: HTMLVideoElement, hls: Hls | null): AudioTrack[] {
         label: t.label || t.language || `Track ${i + 1}`,
         kind: t.kind,
         isDefault: !!t.enabled,
+        decodable: true,
         source: 'video',
         index: i
       })
