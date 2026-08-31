@@ -15,7 +15,7 @@ export const entries: ChangelogEntry[] = [
   {
     version: '1.6.0',
     date: '2026-08-31',
-    summary: 'A fresh look for feedback and updates, and Discord presence that follows VLC.',
+    summary: 'A fresh look, source sorting, Discord presence in VLC, and a stack of player fixes.',
     body: Entry_1_6_0
   },
   {
