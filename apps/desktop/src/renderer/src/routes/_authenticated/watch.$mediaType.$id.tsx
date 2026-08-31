@@ -712,6 +712,37 @@ function WatchPage(): React.JSX.Element {
     markWatched
   ])
 
+  // Handing off to an external player pauses the internal engine, but the user is still watching —
+  // keep presence in "playing" with a position that advances in wall-clock time from the handoff
+  // point. We can't see the external player's real state, so this assumes continuous playback and
+  // stops once the runtime would have elapsed. Resuming internal playback drops the simulation.
+  const [externalHandoff, setExternalHandoff] = useState<{ atMs: number; posSec: number } | null>(
+    null
+  )
+  const [externalNowMs, setExternalNowMs] = useState(0)
+
+  useEffect(() => {
+    if (!paused) setExternalHandoff(null)
+  }, [paused])
+
+  useEffect(() => {
+    if (!externalHandoff) return
+    const tick = (): void => {
+      const posSec = externalHandoff.posSec + (Date.now() - externalHandoff.atMs) / 1000
+      if (duration > 0 && posSec >= duration) {
+        setExternalHandoff(null)
+        return
+      }
+      setExternalNowMs(Date.now())
+    }
+    const t = setInterval(tick, 5000)
+    return () => clearInterval(t)
+  }, [externalHandoff, duration])
+
+  const externalPosSec = externalHandoff
+    ? externalHandoff.posSec + Math.max(0, externalNowMs - externalHandoff.atMs) / 1000
+    : null
+
   useDiscordPresence({
     title: search.title,
     poster: rpcImageUrl,
@@ -721,9 +752,9 @@ function WatchPage(): React.JSX.Element {
       search.mediaType === 'tv' && search.episodeLabel
         ? search.episodeLabel.replace(/^S\d+E\d+\s*[·\-–—]\s*/i, '')
         : null,
-    currentTime: timePos,
+    currentTime: externalPosSec ?? timePos,
     duration,
-    playing: !paused
+    playing: externalHandoff ? true : !paused
   })
 
   // chrome auto-hide
@@ -1033,6 +1064,10 @@ function WatchPage(): React.JSX.Element {
                 streamUrl={search.url}
                 getPosition={() => engine.controllerRef.current?.currentTime ?? 0}
                 onBeforeLaunch={() => {
+                  setExternalHandoff({
+                    atMs: Date.now(),
+                    posSec: engine.controllerRef.current?.currentTime ?? 0
+                  })
                   if (!paused) togglePause()
                 }}
                 onOpenChange={handleMenuOpenChange}
