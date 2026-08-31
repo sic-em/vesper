@@ -1,3 +1,4 @@
+@import '@fontsource-variable/inter';
 @import 'tailwindcss';
 
 /* Interactive controls show the pointer cursor. */
@@ -22,8 +23,8 @@
 /* ----- design tokens (oa-design grammar on Vesper's dark palette, ADR-0013) ----- */
 @theme {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'SF Pro', 'SF Pro Text', 'Segoe UI Variable', 'Segoe UI',
-    system-ui, sans-serif;
+    'Inter Variable', -apple-system, BlinkMacSystemFont, 'SF Pro', 'SF Pro Text',
+    'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
 
   /* Neutrals are never picked: they are --ink mixed into transparency at
      stated percentages (oa-design's one idea, re-inked white for dark). */
