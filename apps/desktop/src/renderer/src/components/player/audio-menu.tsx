@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Popover } from '@base-ui/react/popover'
 import { cn } from '@renderer/lib/cn'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 import { CheckIcon } from '@renderer/components/icons'
 import { langLabel } from '@renderer/lib/lang'
 import { FlagTile } from './flag-tile'
@@ -37,8 +38,8 @@ export function AudioMenu({
       <Popover.Portal>
         <Popover.Positioner side="top" sideOffset={42} align="center" className="z-[100]">
           <Popover.Popup
-            className={cn('w-[360px] overflow-hidden rounded-[14px] p-2 backdrop-blur-2xl')}
-            style={{ backgroundColor: '#141414EB' }}
+            className={cn('w-[360px] overflow-hidden p-2 backdrop-blur-2xl')}
+            style={{ backgroundColor: '#141414EB', ...squircleStyle('frame-sm') }}
           >
             <div className="px-3 pt-2 pb-1">
               <span className="text-[11px] leading-[14px] font-bold tracking-[0.08em] text-white/50 uppercase">

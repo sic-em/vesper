@@ -1,4 +1,5 @@
 import { Dialog } from '@base-ui/react/dialog'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface VideoModalProps {
   ytKey: string | null
@@ -18,7 +19,8 @@ export function VideoModal({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md" />
         <Dialog.Popup
-          className="fixed top-1/2 left-1/2 z-50 w-[min(1100px,90vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-xl bg-black shadow-2xl"
+          className="fixed top-1/2 left-1/2 z-50 w-[min(1100px,90vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-black shadow-2xl"
+          style={squircleStyle('frame')}
           aria-label={title}
         >
           <div className="aspect-video w-full">

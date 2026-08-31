@@ -1,4 +1,5 @@
 import { Dialog } from '@base-ui/react/dialog'
+import { SquircleSurface } from '@renderer/components/ui/squircle-surface'
 
 interface OverviewModalProps {
   title: string
@@ -18,15 +19,22 @@ export function OverviewModal({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Popup
-          className="fixed top-1/2 left-1/2 z-50 flex max-h-[70vh] w-[min(560px,90vw)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141414]/95 p-6 backdrop-blur-xl"
+          className="fixed top-1/2 left-1/2 z-50 w-[min(560px,90vw)] -translate-x-1/2 -translate-y-1/2 outline-none"
           aria-label={title}
         >
-          <h2 className="shrink-0 text-[17px] leading-tight font-bold tracking-[-0.01em] text-text">
-            {title}
-          </h2>
-          <p className="scroll-hide mt-3 overflow-y-auto text-[14px] leading-[1.6] font-medium text-text-secondary">
-            {overview}
-          </p>
+          <SquircleSurface
+            variant="frame"
+            className="max-h-[70vh] p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)]"
+          >
+            <h2 className="shrink-0 pt-1.5 pb-2 pl-2.5 text-[15px] leading-4 font-medium tracking-[-0.01em] text-text">
+              {title}
+            </h2>
+            <SquircleSurface variant="inset" className="min-h-0 overflow-hidden">
+              <p className="scroll-hide overflow-y-auto px-4 py-3.5 text-[14px] leading-[1.6] font-medium text-text-secondary">
+                {overview}
+              </p>
+            </SquircleSurface>
+          </SquircleSurface>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

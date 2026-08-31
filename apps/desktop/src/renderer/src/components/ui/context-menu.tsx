@@ -1,10 +1,13 @@
 import { ContextMenu as BaseContextMenu } from '@base-ui/react/context-menu'
 import { Menu as BaseMenu } from '@base-ui/react/menu'
 import { cn } from '@renderer/lib/cn'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 const POPUP_CLASS = cn(
-  'z-[120] flex min-w-[220px] flex-col gap-px rounded-xl bg-surface-2 p-1.5 outline-none shadow-[0_8px_24px_rgba(0,0,0,0.4)]'
+  'z-[120] flex min-w-[220px] flex-col gap-px border border-white/[0.06] bg-surface-2 p-1.5 outline-none shadow-[0_8px_24px_rgba(0,0,0,0.4)]'
 )
+
+const POPUP_STYLE = squircleStyle('frame-sm')
 
 const ITEM_BASE = cn(
   'flex h-8 items-center gap-3 rounded-md bg-transparent px-2.5 text-left text-[13px] leading-4 font-medium outline-none select-none data-[highlighted]:bg-white/[0.08]'
@@ -29,7 +32,7 @@ export function ContextMenuRoot({ children, trigger }: RootProps): React.JSX.Ele
       <BaseContextMenu.Trigger className="contents">{trigger}</BaseContextMenu.Trigger>
       <BaseContextMenu.Portal>
         <BaseContextMenu.Positioner className="z-[120]">
-          <BaseContextMenu.Popup className={POPUP_CLASS}>{children}</BaseContextMenu.Popup>
+          <BaseContextMenu.Popup className={POPUP_CLASS} style={POPUP_STYLE}>{children}</BaseContextMenu.Popup>
         </BaseContextMenu.Positioner>
       </BaseContextMenu.Portal>
     </BaseContextMenu.Root>
@@ -54,7 +57,7 @@ export function ContextMenuPopover({
       <BaseMenu.Trigger render={trigger as React.ReactElement} />
       <BaseMenu.Portal>
         <BaseMenu.Positioner className="z-[120]" align="end" side="bottom" sideOffset={6}>
-          <BaseMenu.Popup className={POPUP_CLASS}>{children}</BaseMenu.Popup>
+          <BaseMenu.Popup className={POPUP_CLASS} style={POPUP_STYLE}>{children}</BaseMenu.Popup>
         </BaseMenu.Positioner>
       </BaseMenu.Portal>
     </BaseMenu.Root>
@@ -137,7 +140,7 @@ export function ContextMenuSubmenu({ icon, label, children }: SubmenuProps): Rea
       </BaseContextMenu.SubmenuTrigger>
       <BaseContextMenu.Portal>
         <BaseContextMenu.Positioner className="z-[120]" sideOffset={8} alignOffset={-6}>
-          <BaseContextMenu.Popup className={POPUP_CLASS}>{children}</BaseContextMenu.Popup>
+          <BaseContextMenu.Popup className={POPUP_CLASS} style={POPUP_STYLE}>{children}</BaseContextMenu.Popup>
         </BaseContextMenu.Positioner>
       </BaseContextMenu.Portal>
     </BaseContextMenu.SubmenuRoot>

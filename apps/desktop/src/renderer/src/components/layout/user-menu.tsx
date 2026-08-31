@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { api } from '@convex/_generated/api'
 import { Avatar } from '@renderer/components/ui/avatar'
 import { SettingsIcon, SignOutIcon, UserGroupIcon, UserIcon } from '@renderer/components/icons'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 export function UserMenu(): React.JSX.Element {
   const navigate = useNavigate()
@@ -37,7 +38,10 @@ export function UserMenu(): React.JSX.Element {
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="end" sideOffset={8} className="z-[100]">
-          <Menu.Popup className="flex w-[260px] shadow-[0_8px_24px_rgba(0,0,0,0.4)] flex-col rounded-xl bg-surface-2 p-1 outline-none">
+          <Menu.Popup
+            className="flex w-[260px] flex-col border border-white/[0.06] bg-surface-2 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.4)] outline-none"
+            style={squircleStyle('frame-sm')}
+          >
             <button
               type="button"
               onClick={goProfile}

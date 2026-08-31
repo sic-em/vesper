@@ -2,6 +2,7 @@ import { ContextMenu } from '@base-ui/react/context-menu'
 import { cn } from '@renderer/lib/cn'
 import { CheckIcon } from '@renderer/components/icons'
 import { PLAYBACK_SPEEDS } from '@renderer/lib/player-prefs'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface Props {
   statsVisible: boolean
@@ -14,7 +15,9 @@ interface Props {
 }
 
 const popupClass =
-  'min-w-[220px] origin-[var(--transform-origin)] rounded-[10px] bg-[#1a1a1aF2] p-1 text-white shadow-xl backdrop-blur-2xl outline-none transition-[scale,opacity] duration-100 ease-out data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0'
+  'min-w-[220px] origin-[var(--transform-origin)] bg-[#1a1a1aF2] p-1 text-white shadow-xl backdrop-blur-2xl outline-none transition-[scale,opacity] duration-100 ease-out data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0'
+
+const popupStyle = squircleStyle('frame-sm')
 
 const itemClass =
   'flex h-8 items-center justify-between gap-3 rounded-md px-2.5 text-[12.5px] leading-4 font-medium outline-none select-none data-[highlighted]:bg-white/[0.08] data-[disabled]:text-white/30'
@@ -31,7 +34,7 @@ export function PlayerContextMenuPopup({
   return (
     <ContextMenu.Portal>
       <ContextMenu.Positioner className="z-[100] outline-none">
-        <ContextMenu.Popup className={popupClass}>
+        <ContextMenu.Popup className={popupClass} style={popupStyle}>
           <ContextMenu.Item className={itemClass} onClick={onToggleStats}>
             <span>Stats for nerds</span>
             {statsVisible ? <CheckIcon className="size-3.5 text-white" /> : null}
@@ -51,7 +54,7 @@ export function PlayerContextMenuPopup({
                 sideOffset={8}
                 alignOffset={-6}
               >
-                <ContextMenu.Popup className={popupClass}>
+                <ContextMenu.Popup className={popupClass} style={popupStyle}>
                   {PLAYBACK_SPEEDS.map((s) => (
                     <ContextMenu.Item key={s} className={itemClass} onClick={() => onSetSpeed(s)}>
                       <span className="tabular-nums">{s === 1 ? 'Normal (1×)' : `${s}×`}</span>
