@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { latestEntry } from '@vesper/changelog'
-import { SQUIRCLE_CLIP } from '@renderer/lib/squircle'
+import { SquircleSurface } from '@renderer/components/ui/squircle-surface'
 
 const LAST_SEEN_KEY = 'vesper:lastSeenChangelogVersion'
 
@@ -35,11 +35,7 @@ export function UpdateCard(): React.JSX.Element | null {
 
   return (
     <div className="mx-2 mb-2">
-      {/* Squircle frame holding a recessed inset — same surface anatomy as the feedback modal. */}
-      <div
-        className="flex flex-col rounded-[18px] border border-white/[0.06] bg-surface-2 p-1 shadow-[0_1px_2px_rgba(0,0,0,0.3)] [--card-clip-handle:2px] [--card-clip-radius:10px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]"
-        style={{ '--card-clip-path': SQUIRCLE_CLIP } as React.CSSProperties}
-      >
+      <SquircleSurface variant="frame-sm" className="p-1 shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
         <div className="flex items-center justify-between gap-2 pt-1 pb-1.5 pl-2 pr-1">
           <h3 className="text-[13px] leading-4 font-medium text-text">
             What&apos;s new in v{entry.version}
@@ -53,9 +49,9 @@ export function UpdateCard(): React.JSX.Element | null {
             <span aria-hidden className="inline-block h-[2px] w-3.5 rounded-full bg-current" />
           </button>
         </div>
-        <div className="rounded-[14px] border border-white/[0.05] bg-surface px-2.5 py-2 [--card-clip-radius:8px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]">
+        <SquircleSurface variant="inset-sm" className="px-2.5 py-2">
           <p className="text-[12px] leading-4 text-text-secondary">{entry.summary}</p>
-        </div>
+        </SquircleSurface>
         <Link
           to="/changelog"
           onClick={() => {
@@ -66,7 +62,7 @@ export function UpdateCard(): React.JSX.Element | null {
           See what changed
           <ChevronRight />
         </Link>
-      </div>
+      </SquircleSurface>
     </div>
   )
 }

@@ -21,7 +21,7 @@ import { Segmented } from '@renderer/components/ui/segmented'
 import { sortStreams, STREAM_SORTS, type StreamSort } from '@renderer/lib/stream-picker'
 import { readStreamSort, writeStreamSort } from '@renderer/lib/player-prefs'
 import { resolveStreamUrl, type StreamContext } from '@renderer/lib/resolve-stream'
-import { SQUIRCLE_CLIP } from '@renderer/lib/squircle'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 const POP = { type: 'spring', stiffness: 400, damping: 26 } as const
 
@@ -52,8 +52,8 @@ export function StreamPicker(props: StreamPickerProps): React.JSX.Element {
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={POP}
-            className="flex h-[560px] flex-col rounded-[26px] border border-white/[0.06] bg-surface-2 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)] [--card-clip-handle:2.25px] [--card-clip-radius:14px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]"
-            style={{ '--card-clip-path': SQUIRCLE_CLIP } as React.CSSProperties}
+            className="flex h-[560px] flex-col border border-white/[0.06] bg-surface-2 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)]"
+            style={squircleStyle('frame')}
           >
             {props.open ? <PickerBody {...props} /> : null}
           </motion.div>
@@ -131,7 +131,10 @@ function PickerBody(props: StreamPickerProps): React.JSX.Element {
           options={STREAM_SORTS}
         />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col rounded-[20px] border border-white/[0.05] bg-surface [--card-clip-radius:12px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]">
+      <div
+        className="flex min-h-0 flex-1 flex-col border border-white/[0.05] bg-surface"
+        style={squircleStyle('inset')}
+      >
         <div className="scroll-hide flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 py-1.5">
           {streamsQuery.isLoading
             ? Array.from({ length: 12 }).map((_, i) => <SkeletonRow key={i} />)
