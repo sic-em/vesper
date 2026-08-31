@@ -16,7 +16,7 @@ export const entries: ChangelogEntry[] = [
   {
     version: '1.7.0',
     date: '2026-08-31',
-    summary: 'The new look lands everywhere, plus a fresh typeface and changelog credits.',
+    summary: 'A new look and typeface, source sorting, Discord in VLC, and a stack of fixes.',
     body: Entry_1_7_0
   },
   {
