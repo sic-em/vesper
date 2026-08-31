@@ -54,7 +54,7 @@ import {
   writeSubtitleStyle,
   type SubtitleStyle
 } from '@renderer/lib/subtitle-prefs'
-import { readAudioLastLang, writeAudioLastLang } from '@renderer/lib/audio-prefs'
+import { readAudioPreferredLang, writeAudioLastLang } from '@renderer/lib/audio-prefs'
 import { ensureScrape } from '@renderer/lib/stream-orchestrator'
 import { resolveStreamUrl } from '@renderer/lib/resolve-stream'
 import {
@@ -312,7 +312,7 @@ function WatchPage(): React.JSX.Element {
   useEffect(() => {
     if (audioAutoAppliedRef.current) return
     if (audio.tracks.length <= 1) return
-    const pref = normalizeLangCode(readAudioLastLang())
+    const pref = normalizeLangCode(readAudioPreferredLang())
     if (!pref) return
     const match = audio.tracks.find((t) => normalizeLangCode(t.lang) === pref)
     if (match) {
