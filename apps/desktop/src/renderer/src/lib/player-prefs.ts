@@ -1,5 +1,8 @@
+import type { StreamSort } from './stream-picker'
+
 const KEY_SPEED = 'vesper.player.speed'
 const KEY_SKIP_BUTTONS = 'vesper.player.skipButtons'
+const KEY_STREAM_SORT = 'vesper.player.streamSort'
 
 export const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
 export const DEFAULT_SPEED = 1
@@ -24,4 +27,13 @@ export function readSkipButtonsEnabled(): boolean {
 
 export function writeSkipButtonsEnabled(enabled: boolean): void {
   localStorage.setItem(KEY_SKIP_BUTTONS, enabled ? '1' : '0')
+}
+
+export function readStreamSort(): StreamSort {
+  const raw = localStorage.getItem(KEY_STREAM_SORT)
+  return raw === 'quality' || raw === 'size' ? raw : 'default'
+}
+
+export function writeStreamSort(sort: StreamSort): void {
+  localStorage.setItem(KEY_STREAM_SORT, sort)
 }
