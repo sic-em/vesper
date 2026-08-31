@@ -3,6 +3,7 @@ import Entry_1_3_0 from './1.3.0.mdx'
 import Entry_1_5_0 from './1.5.0.mdx'
 import Entry_1_6_0 from './1.6.0.mdx'
 import Entry_1_7_0 from './1.7.0.mdx'
+import Entry_1_8_0 from './1.8.0.mdx'
 
 export interface ChangelogEntry {
   version: string
@@ -13,6 +14,12 @@ export interface ChangelogEntry {
 }
 
 export const entries: ChangelogEntry[] = [
+  {
+    version: '1.8.0',
+    date: '2026-08-31',
+    summary: 'Autoplay rolls you into the next episode, plus a pile of player fixes.',
+    body: Entry_1_8_0
+  },
   {
     version: '1.7.0',
     date: '2026-08-31',
