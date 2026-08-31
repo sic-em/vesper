@@ -784,6 +784,9 @@ function WatchPage(): React.JSX.Element {
       } else if (key === 'f' || key === 'F') {
         if (document.fullscreenElement) document.exitFullscreen()
         else document.documentElement.requestFullscreen()
+      } else if (key === 'h' || key === 'H') {
+        const r = c.cycleToneMode()
+        flashToast(r.hdr ? `HDR tone map: ${r.mode}` : 'Source is SDR — no tone mapping')
       } else if (key === 'm' || key === 'M') {
         setMuted((m) => !m)
       } else if (key === 'Escape') {

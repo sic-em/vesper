@@ -5,7 +5,7 @@ import {
   type SubtitleMeta,
   type VideoMeta
 } from './demuxer'
-import { WebGPURenderer } from './webgpu-renderer'
+import { TONE_MODES, WebGPURenderer, type ToneMode } from './webgpu-renderer'
 import { AvClock } from './av-clock'
 import { AudioPipeline } from './audio-pipeline'
 import { ensureExtraDecoders } from './codec-support'
@@ -218,6 +218,16 @@ export class PlayerController {
       this.audio?.start(target)
       void this.runVideoLoop(target)
     }
+  }
+
+  /**
+   * Steps to the next HDR interpretation. Takes effect on the next rendered frame.
+   */
+  cycleToneMode(): { mode: ToneMode; hdr: boolean } {
+    const i = TONE_MODES.indexOf(this.renderer.toneMode)
+    const next = TONE_MODES[(i + 1) % TONE_MODES.length]
+    this.renderer.setToneMode(next)
+    return { mode: next, hdr: this.renderer.sourceIsHdr }
   }
 
   setRate(rate: number): void {
