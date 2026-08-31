@@ -17,7 +17,9 @@ function ZapIcon({ className }: { className?: string }): React.JSX.Element {
     </svg>
   )
 }
-import { rankStreams } from '@renderer/lib/stream-picker'
+import { Segmented } from '@renderer/components/ui/segmented'
+import { sortStreams, STREAM_SORTS, type StreamSort } from '@renderer/lib/stream-picker'
+import { readStreamSort, writeStreamSort } from '@renderer/lib/player-prefs'
 import { resolveStreamUrl, type StreamContext } from '@renderer/lib/resolve-stream'
 
 interface StreamPickerProps {
@@ -52,6 +54,12 @@ function PickerBody(props: StreamPickerProps): React.JSX.Element {
   const { title, mediaType, imdbId, tmdbId, season, episode, onPicked, onOpenChange } = props
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [resolving, setResolving] = useState(false)
+  const [sort, setSort] = useState<StreamSort>(() => readStreamSort())
+
+  const handleSortChange = (next: StreamSort): void => {
+    setSort(next)
+    writeStreamSort(next)
+  }
 
   const streamsQuery = useQuery({
     queryKey: ['streams', mediaType, imdbId, season, episode],
@@ -67,8 +75,11 @@ function PickerBody(props: StreamPickerProps): React.JSX.Element {
     const s = streamsQuery.data ?? []
     // Drop 4K Dolby Vision — WebCodecs cannot decode DV (keep 4K HDR10/SDR).
     // Cap the list to keep it off the perf cliff.
-    return rankStreams(s.filter((x) => x.qualityTier !== '4K-DV')).slice(0, 60)
-  }, [streamsQuery.data])
+    return sortStreams(
+      s.filter((x) => x.qualityTier !== '4K-DV'),
+      sort
+    ).slice(0, 60)
+  }, [streamsQuery.data, sort])
 
   const context = useMemo<StreamContext>(
     () => ({ mediaType, imdbId, season, episode, tmdbId }),
@@ -91,12 +102,20 @@ function PickerBody(props: StreamPickerProps): React.JSX.Element {
 
   return (
     <div className="flex h-full min-h-0 flex-col pt-4.5">
-      {/* pr aligns the close icon's center with the rows' trailing zap column (27px from edge). */}
-      <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] pb-3.5 pl-4.5 pr-[15px]">
-        <h2 className="text-[15px] leading-4 font-bold tracking-[-0.01em] text-text">{title}</h2>
-        <Dialog.Close className="flex size-6 items-center justify-center rounded-md outline-none">
-          <CloseIcon className="size-3.5 text-text-muted" />
-        </Dialog.Close>
+      <div className="shrink-0 border-b border-white/[0.06] pb-3.5">
+        {/* pr aligns the close icon's center with the rows' trailing zap column (27px from edge). */}
+        <div className="flex items-center justify-between pl-4.5 pr-[15px]">
+          <h2 className="text-[15px] leading-4 font-bold tracking-[-0.01em] text-text">{title}</h2>
+          <Dialog.Close className="flex size-6 items-center justify-center rounded-md outline-none">
+            <CloseIcon className="size-3.5 text-text-muted" />
+          </Dialog.Close>
+        </div>
+        <Segmented<StreamSort>
+          className="mx-4.5 mt-3.5"
+          value={sort}
+          onChange={handleSortChange}
+          options={STREAM_SORTS}
+        />
       </div>
       <div className="scroll-hide flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-3.5">
         {streamsQuery.isLoading

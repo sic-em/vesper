@@ -1,4 +1,4 @@
-import type { ParsedStream } from './comet'
+import type { ParsedStream, QualityTier } from './comet'
 
 interface PickOptions {
   bingeGroup?: string
@@ -49,4 +49,45 @@ export function topCandidates(streams: ParsedStream[], opts: PickOptions = {}): 
     if (out.length >= n) break
   }
   return out
+}
+
+export type StreamSort = 'default' | 'quality' | 'size'
+
+export const STREAM_SORTS: { value: StreamSort; label: string }[] = [
+  { value: 'default', label: 'Default' },
+  { value: 'quality', label: 'Quality' },
+  { value: 'size', label: 'Size' }
+]
+
+// Display order only — highest quality first. Kept separate from tierScore so changing what the
+// list shows never moves what autoplay picks.
+const QUALITY_ORDER: QualityTier[] = ['4K-DV', '4K-HDR', '4K', '1080p', '720p', '480p', 'SD']
+
+function qualityRank(t: QualityTier): number {
+  const i = QUALITY_ORDER.indexOf(t)
+  return i === -1 ? QUALITY_ORDER.length : i
+}
+
+export function sortStreams(
+  streams: ParsedStream[],
+  sort: StreamSort,
+  opts: PickOptions = {}
+): ParsedStream[] {
+  if (sort === 'quality') {
+    return streams.toSorted(
+      (a, b) =>
+        qualityRank(a.qualityTier) - qualityRank(b.qualityTier) ||
+        b.videoSize - a.videoSize ||
+        b.seeders - a.seeders
+    )
+  }
+  if (sort === 'size') {
+    return streams.toSorted(
+      (a, b) =>
+        b.videoSize - a.videoSize ||
+        qualityRank(a.qualityTier) - qualityRank(b.qualityTier) ||
+        b.seeders - a.seeders
+    )
+  }
+  return rankStreams(streams, opts)
 }
