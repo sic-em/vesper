@@ -326,7 +326,8 @@ app.whenReady().then(() => {
         'https://*.r2.cloudflarestorage.com/*',
         'https://*.download.real-debrid.com/*',
         'https://*.elfhosted.cc/*',
-        'https://*.strem.fun/*'
+        'https://*.strem.fun/*',
+        'https://comet.vespr.dev/*',
       ]
     },
     (details, callback) => {
