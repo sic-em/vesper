@@ -7,7 +7,7 @@ import { tvDetailsQuery, tvSeasonQuery } from '@renderer/lib/tmdb-queries'
 import { tmdbImage, type TmdbEpisode } from '@renderer/lib/tmdb'
 import { cn } from '@renderer/lib/cn'
 import { CloseIcon } from '@renderer/components/icons'
-import { scrapeAndRace } from '@renderer/lib/stream-orchestrator'
+import { resolveEpisodeWatch } from '@renderer/lib/play-episode'
 
 interface Props {
   open: boolean
@@ -74,33 +74,20 @@ export function EpisodesMenu({
     if (loadingEpId !== null) return
     setLoadingEpId(ep.id)
     try {
-      const { stream: pick, url } = await scrapeAndRace({
-        scrape: {
-          mediaType: 'tv',
-          imdbId,
-          tmdbId: tvTmdbId,
-          season: ep.season_number,
-          episode: ep.episode_number
-        },
+      const search = await resolveEpisodeWatch({
+        tvTmdbId,
+        imdbId,
+        showTitle,
+        season: ep.season_number,
+        episode: ep.episode_number,
+        episodeName: ep.name,
         bingeGroup: currentBingeGroup
       })
       onClose()
       void navigate({
         to: '/watch/$mediaType/$id',
         params: { mediaType: 'tv', id: String(tvTmdbId) },
-        search: {
-          url,
-          title: showTitle,
-          episodeLabel: ep.name
-            ? `S${ep.season_number}E${ep.episode_number} · ${ep.name}`
-            : `S${ep.season_number}E${ep.episode_number}`,
-          imdbId,
-          mediaType: 'tv',
-          season: ep.season_number,
-          episode: ep.episode_number,
-          filename: pick.filename,
-          bingeGroup: pick.bingeGroup
-        }
+        search
       })
     } catch (err) {
       console.error('Failed to resolve episode stream', err)

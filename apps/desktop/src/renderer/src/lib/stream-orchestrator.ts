@@ -43,10 +43,44 @@ function contextOf(k: ScrapeKey): StreamContext {
   }
 }
 
-async function probePlayable(url: string, signal: AbortSignal): Promise<void> {
+// Nothing smaller than this is an episode, whatever the addon claimed it was.
+const MIN_PLAUSIBLE_BYTES = 20 * 1024 * 1024
+// A remux and its listing can disagree a little; a placeholder and its listing disagree by orders
+// of magnitude.
+const MIN_SIZE_RATIO = 0.5
+
+/** Total bytes of the resource, from a range response or a plain one. Null when unstated. */
+function totalBytes(r: Response): number | null {
+  const match = r.headers.get('content-range')?.match(/\/(\d+)\s*$/)
+  if (match) return Number(match[1])
+  if (r.status === 200) {
+    const len = Number(r.headers.get('content-length'))
+    return Number.isFinite(len) && len > 0 ? len : null
+  }
+  return null
+}
+
+/**
+ * The addon says a torrent is cached, but the debrid service is the one that has to be holding it.
+ * When its cache check was stale it answers with a short "torrent is being downloaded" clip rather
+ * than an error — a real, playable video that is not the episode. Size is the tell, and it is in
+ * the headers of the probe we already make.
+ */
+async function probePlayable(
+  url: string,
+  expectedBytes: number,
+  signal: AbortSignal
+): Promise<void> {
   const r = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' }, signal })
   if (!r.ok && r.status !== 206) throw new Error(`probe ${r.status}`)
   await r.arrayBuffer()
+
+  const total = totalBytes(r)
+  if (total === null) return
+  if (total < MIN_PLAUSIBLE_BYTES) throw new Error(`probe served ${total} bytes, not the episode`)
+  if (expectedBytes > 0 && total < expectedBytes * MIN_SIZE_RATIO) {
+    throw new Error(`probe served ${total} bytes, listing said ${expectedBytes}`)
+  }
 }
 
 export interface RaceResult {
@@ -78,9 +112,10 @@ export async function scrapeAndRace(args: {
     const timeoutId = window.setTimeout(() => ctrl.abort(), 15_000)
     try {
       const url = await resolveStreamUrl({ stream, context })
-      await probePlayable(url, ctrl.signal)
+      await probePlayable(url, stream.videoSize, ctrl.signal)
       return { stream, url }
     } catch (e) {
+      console.warn('[stream] candidate rejected', stream.filename ?? stream.name, e)
       lastErr = e
     } finally {
       window.clearTimeout(timeoutId)

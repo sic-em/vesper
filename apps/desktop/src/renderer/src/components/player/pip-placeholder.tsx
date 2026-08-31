@@ -3,14 +3,18 @@ import { cn } from '@renderer/lib/cn'
 interface Props {
   visible: boolean
   onExit: () => void
+  onMinimize: () => void
 }
 
 /**
  * Covers the player canvas while picture-in-picture is up. The canvas has to keep rendering — it
  * is the source the PiP window mirrors — so the video is hidden rather than stopped, the way a
  * browser blanks a <video> that has been handed to PiP.
+ *
+ * The player hides the window chrome, so this is also the only place to get the now-redundant main
+ * window out of the way — handing playback to PiP is exactly when someone wants it gone.
  */
-export function PipPlaceholder({ visible, onExit }: Props): React.JSX.Element {
+export function PipPlaceholder({ visible, onExit, onMinimize }: Props): React.JSX.Element {
   return (
     <div
       className={cn(
@@ -23,14 +27,24 @@ export function PipPlaceholder({ visible, onExit }: Props): React.JSX.Element {
       <p className="text-[15px] leading-5 font-semibold tracking-[-0.01em] text-white/70">
         Playing in picture-in-picture
       </p>
-      <button
-        type="button"
-        onClick={onExit}
-        tabIndex={visible ? 0 : -1}
-        className="rounded-lg bg-white/10 px-4 py-2 text-[13px] leading-4 font-semibold tracking-[-0.01em] text-white outline-none hover:bg-white/20"
-      >
-        Play here instead
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onExit}
+          tabIndex={visible ? 0 : -1}
+          className="rounded-lg bg-white/10 px-4 py-2 text-[13px] leading-4 font-semibold tracking-[-0.01em] text-white outline-none hover:bg-white/20"
+        >
+          Play here instead
+        </button>
+        <button
+          type="button"
+          onClick={onMinimize}
+          tabIndex={visible ? 0 : -1}
+          className="rounded-lg bg-white/10 px-4 py-2 text-[13px] leading-4 font-semibold tracking-[-0.01em] text-white outline-none hover:bg-white/20"
+        >
+          Minimize Vesper
+        </button>
+      </div>
     </div>
   )
 }

@@ -394,6 +394,14 @@ app.whenReady().then(() => {
     if (win.isMaximized()) win.unmaximize()
     else win.maximize()
   })
+  // Restoring a minimized window keeps the bounds the OS already had, so a window that was sent
+  // away during picture-in-picture comes back exactly where and how the viewer left it.
+  ipcMain.handle('window:restore', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    if (win.isMinimized()) win.restore()
+    win.show()
+  })
   ipcMain.handle('window:close', (event) => {
     BrowserWindow.fromWebContents(event.sender)?.close()
   })
