@@ -11,7 +11,7 @@ import { Select } from '@renderer/components/ui/select'
 import { CloseIcon, CmdIcon, ReturnIcon } from '@renderer/components/icons'
 import { isMac } from '@renderer/lib/platform'
 import { cn } from '@renderer/lib/cn'
-import { SQUIRCLE_CLIP } from '@renderer/lib/squircle'
+import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 import { useErrorShake } from '@renderer/hooks/use-error-shake'
 import { api } from '@convex/_generated/api'
 
@@ -183,8 +183,8 @@ export function FeedbackModal({
             initial={{ opacity: 0, scale: 0.96, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={POP}
-            className="flex h-[380px] flex-col rounded-[26px] border border-white/[0.06] bg-surface-2 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)] [--card-clip-handle:2.25px] [--card-clip-radius:14px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]"
-            style={{ '--card-clip-path': SQUIRCLE_CLIP } as React.CSSProperties}
+            className="flex h-[380px] flex-col border border-white/[0.06] bg-surface-2 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)]"
+            style={squircleStyle('frame')}
           >
             <AnimatePresence mode="wait" initial={false}>
               {state === 'sent' ? (
@@ -206,7 +206,10 @@ export function FeedbackModal({
                       <CloseIcon className="size-3" />
                     </button>
                   </div>
-                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-[20px] border border-white/[0.05] bg-surface px-8 text-center [--card-clip-radius:12px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]">
+                  <div
+                    className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 border border-white/[0.05] bg-surface px-8 text-center"
+                    style={squircleStyle('inset')}
+                  >
                     {admins && admins.length > 0 ? <AdminStack admins={admins} /> : null}
                     <h2 className="text-[22px] leading-7 font-medium text-text">Thank you!</h2>
                     <p className="text-[13px] leading-5 font-medium text-text-tertiary">
@@ -248,9 +251,10 @@ export function FeedbackModal({
                   <span
                     ref={shakeRef}
                     className={cn(
-                      't-input flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-white/[0.05] bg-surface [--card-clip-radius:12px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]',
+                      't-input flex min-h-0 flex-1 flex-col overflow-hidden border border-white/[0.05] bg-surface',
                       shownError && 'is-error'
                     )}
+                    style={squircleStyle('inset')}
                   >
                     <textarea
                       autoFocus
