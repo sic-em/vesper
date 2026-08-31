@@ -21,6 +21,9 @@ import { Segmented } from '@renderer/components/ui/segmented'
 import { sortStreams, STREAM_SORTS, type StreamSort } from '@renderer/lib/stream-picker'
 import { readStreamSort, writeStreamSort } from '@renderer/lib/player-prefs'
 import { resolveStreamUrl, type StreamContext } from '@renderer/lib/resolve-stream'
+import { SQUIRCLE_CLIP } from '@renderer/lib/squircle'
+
+const POP = { type: 'spring', stiffness: 400, damping: 26 } as const
 
 interface StreamPickerProps {
   open: boolean
@@ -41,9 +44,19 @@ export function StreamPicker(props: StreamPickerProps): React.JSX.Element {
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
         <Dialog.Popup
           aria-label="Select source"
-          className="fixed top-1/2 left-1/2 z-50 flex h-[560px] w-[440px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[14px] border border-white/[0.06] bg-[#141414]/95 backdrop-blur-xl"
+          className="fixed top-1/2 left-1/2 z-50 w-[440px] -translate-x-1/2 -translate-y-1/2 outline-none"
         >
-          {props.open ? <PickerBody {...props} /> : null}
+          {/* Squircle frame holding a recessed inset — the surface anatomy shared with the
+              feedback modal. The list scrolls inside the inset; the frame never grows. */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={POP}
+            className="flex h-[560px] flex-col rounded-[26px] border border-white/[0.06] bg-surface-2 p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)] [--card-clip-handle:2.25px] [--card-clip-radius:14px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]"
+            style={{ '--card-clip-path': SQUIRCLE_CLIP } as React.CSSProperties}
+          >
+            {props.open ? <PickerBody {...props} /> : null}
+          </motion.div>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
@@ -101,45 +114,48 @@ function PickerBody(props: StreamPickerProps): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col pt-4.5">
-      <div className="shrink-0 border-b border-white/[0.06] pb-3.5">
-        {/* pr aligns the close icon's center with the rows' trailing zap column (27px from edge). */}
-        <div className="flex items-center justify-between pl-4.5 pr-[15px]">
-          <h2 className="text-[15px] leading-4 font-bold tracking-[-0.01em] text-text">{title}</h2>
-          <Dialog.Close className="flex size-6 items-center justify-center rounded-md outline-none">
-            <CloseIcon className="size-3.5 text-text-muted" />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="shrink-0 pt-1.5 pb-2">
+        <div className="flex items-center justify-between pl-2.5 pr-1">
+          <h2 className="line-clamp-1 text-[15px] leading-4 font-medium tracking-[-0.01em] text-text">
+            {title}
+          </h2>
+          <Dialog.Close className="flex size-7 items-center justify-center rounded-full text-text-muted outline-none transition-colors duration-150 ease-out hover:bg-white/[0.08] hover:text-white">
+            <CloseIcon className="size-3.5" />
           </Dialog.Close>
         </div>
         <Segmented<StreamSort>
-          className="mx-4.5 mt-3.5"
+          className="mx-1 mt-2.5"
           value={sort}
           onChange={handleSortChange}
           options={STREAM_SORTS}
         />
       </div>
-      <div className="scroll-hide flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pt-2 pb-3.5">
-        {streamsQuery.isLoading
-          ? Array.from({ length: 12 }).map((_, i) => <SkeletonRow key={i} />)
-          : null}
-        {streamsQuery.isError ? (
-          <p className="px-3 py-6 text-center text-[13px] text-text-muted">
-            Failed to load streams.
-          </p>
-        ) : null}
-        {!streamsQuery.isLoading && !streamsQuery.isError && sorted.length === 0 ? (
-          <p className="px-3 py-6 text-center text-[13px] text-text-muted">No streams found.</p>
-        ) : null}
-        <AnimatePresence initial={false} mode="popLayout">
-          {sorted.map((s) => (
-            <Row
-              key={s.playbackHash}
-              stream={s}
-              selected={s.playbackHash === selectedId}
-              busy={resolving && s.playbackHash === selectedId}
-              onClick={() => void handlePick(s)}
-            />
-          ))}
-        </AnimatePresence>
+      <div className="flex min-h-0 flex-1 flex-col rounded-[20px] border border-white/[0.05] bg-surface [--card-clip-radius:12px] [clip-path:var(--card-clip-path)] [corner-shape:squircle]">
+        <div className="scroll-hide flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 py-1.5">
+          {streamsQuery.isLoading
+            ? Array.from({ length: 12 }).map((_, i) => <SkeletonRow key={i} />)
+            : null}
+          {streamsQuery.isError ? (
+            <p className="px-3 py-6 text-center text-[13px] text-text-muted">
+              Failed to load streams.
+            </p>
+          ) : null}
+          {!streamsQuery.isLoading && !streamsQuery.isError && sorted.length === 0 ? (
+            <p className="px-3 py-6 text-center text-[13px] text-text-muted">No streams found.</p>
+          ) : null}
+          <AnimatePresence initial={false} mode="popLayout">
+            {sorted.map((s) => (
+              <Row
+                key={s.playbackHash}
+                stream={s}
+                selected={s.playbackHash === selectedId}
+                busy={resolving && s.playbackHash === selectedId}
+                onClick={() => void handlePick(s)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   )
@@ -190,7 +206,7 @@ function Row({
       )}
     >
       <div className="flex min-w-0 grow items-center gap-2.5 overflow-hidden">
-        <span className="flex h-5 w-14 shrink-0 items-center justify-center rounded-md bg-white/[0.08] text-[11px] leading-3.5 font-bold tracking-[0.02em] text-text">
+        <span className="flex h-5 w-14 shrink-0 items-center justify-center rounded-md bg-white/[0.08] text-[11px] leading-3.5 font-medium tracking-[0.02em] text-text">
           {stream.qualityLabel}
         </span>
         <span className="line-clamp-1 grow text-left text-[13px] leading-4 font-medium text-text">
