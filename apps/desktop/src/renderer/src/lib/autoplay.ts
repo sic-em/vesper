@@ -1,7 +1,12 @@
 /** Countdown shown on the up-next card before the next episode rolls in. */
 export const AUTOPLAY_COUNTDOWN_SEC = 12
-/** How early the card appears when there is no outro marker to anchor it to. */
-export const UP_NEXT_LEAD_SEC = 30
+/**
+ * How early the card appears when there is no outro marker to anchor it to. Credits routinely run
+ * well past a minute, so a shorter lead would put the card up only after most of them had already
+ * played. It costs nothing to be early here: without a marker the rollover still waits for the end
+ * of the file, so this only decides how long the card is on screen.
+ */
+export const UP_NEXT_LEAD_SEC = 90
 
 /** Where the up-next card appears, and where autoplay actually fires. */
 export function autoplayMarks(args: {
@@ -18,7 +23,9 @@ export function autoplayMarks(args: {
       advanceAtSec: Math.min(outroStartSec + AUTOPLAY_COUNTDOWN_SEC, durationSec)
     }
   }
-  // No outro data: the card rides the real end of the file and nothing is cut short.
+  // No outro data: the card rides the real end of the file and nothing is cut short. The 90% floor
+  // is for short runtimes, where a fixed lead would otherwise put the card up before the halfway
+  // mark of a clip.
   return {
     cardAtSec: Math.max(durationSec * 0.9, durationSec - UP_NEXT_LEAD_SEC),
     advanceAtSec: durationSec
