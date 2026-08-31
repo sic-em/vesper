@@ -94,3 +94,28 @@ jobs:
           name: win-x64
           path: apps/desktop/dist-builder/*.exe
           if-no-files-found: error
+
+  prune-old-versions:
+    # Keep only the version we just published (plus the latest*.yml feed files) in R2.
+    needs: [build-mac, build-win]
+    if: github.event_name == 'push' && needs.build-mac.result == 'success' && needs.build-win.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      AWS_ENDPOINT_URL: https://bdc3cd48c7cafed85bc72348c7fa64eb.r2.cloudflarestorage.com
+      AWS_DEFAULT_REGION: auto
+      # R2 rejects the newer AWS CLI default integrity checksums.
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+    steps:
+      - name: Delete artifacts from previous versions
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "Keeping version $VERSION and latest*.yml"
+          aws s3 ls "s3://mirae/release/" | awk '{print $NF}' | while read -r name; do
+            [ -z "$name" ] && continue
+            case "$name" in
+              latest*.yml) echo "keep  $name" ;;
+              *"-$VERSION."* | *"-$VERSION-"*) echo "keep  $name" ;;
+              *) echo "prune $name" && aws s3 rm "s3://mirae/release/$name" ;;
+            esac
+          done
