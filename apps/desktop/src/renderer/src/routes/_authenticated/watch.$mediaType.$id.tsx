@@ -838,15 +838,28 @@ function WatchPage(): React.JSX.Element {
     void window.api.window.isFullScreen().then((fs) => window.api.window.setFullScreen(!fs))
   }, [])
 
+  // Whether the window was already fullscreen when the player opened, so leaving the player can
+  // put the window back the way the user had it rather than stranding the whole app fullscreen.
+  const enteredFullscreenRef = useRef<boolean | null>(null)
+
   useEffect(() => {
     let cancelled = false
     void window.api.window.isFullScreen().then((fs) => {
-      if (!cancelled) setIsFullscreen(fs)
+      if (cancelled) return
+      if (enteredFullscreenRef.current === null) enteredFullscreenRef.current = fs
+      setIsFullscreen(fs)
     })
     const off = window.api.window.onFullScreenChange(setIsFullscreen)
     return () => {
       cancelled = true
       off()
+      // Only undo fullscreen the player itself introduced. Someone who was already fullscreen
+      // before pressing play stays that way, and someone who dropped out of fullscreen while
+      // watching is not forced back into it.
+      if (enteredFullscreenRef.current !== false) return
+      void window.api.window.isFullScreen().then((fs) => {
+        if (fs) void window.api.window.setFullScreen(false)
+      })
     }
   }, [])
 
