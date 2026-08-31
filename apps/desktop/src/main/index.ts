@@ -324,7 +324,9 @@ app.whenReady().then(() => {
         'https://assets.fanart.tv/*',
         'https://api.introdb.app/*',
         'https://*.r2.cloudflarestorage.com/*',
-        'https://*.download.real-debrid.com/*'
+        'https://*.download.real-debrid.com/*',
+        'https://*.elfhosted.cc/*',
+        'https://*.strem.fun/*'
       ]
     },
     (details, callback) => {
