@@ -5,7 +5,7 @@ import { tvSeasonQuery } from './tmdb-queries'
 
 export type QualityTier = '4K-DV' | '4K-HDR' | '4K' | '1080p' | '720p' | '480p' | 'SD'
 
-export type StreamSource = 'comet' | 'torrentio'
+export type StreamSource = 'comet' | 'torrentio' | 'sootio' | 'meteor'
 
 export interface ParsedStream {
   playbackHash: string
