@@ -35,6 +35,7 @@ interface Props {
   durationSec: number
   currentBingeGroup?: string
   onClose: () => void
+  onFailure: (message: string) => void
 }
 
 export function EpisodesMenu({
@@ -47,7 +48,8 @@ export function EpisodesMenu({
   currentTimeSec,
   durationSec,
   currentBingeGroup,
-  onClose
+  onClose,
+  onFailure
 }: Props): React.JSX.Element {
   const navigate = useNavigate()
   const [loadingEpId, setLoadingEpId] = useState<number | null>(null)
@@ -131,13 +133,12 @@ export function EpisodesMenu({
         search
       })
     } catch (err) {
+      // A failure used to close the player and land the viewer on the show page, which reads as
+      // the app losing its place rather than as one episode being unavailable. The next and
+      // previous buttons already say so and stay put; this now matches. The menu is left open so
+      // another episode is one click away instead of a journey back.
       console.error('Failed to resolve episode stream', err)
-      onClose()
-      void navigate({
-        to: '/tv/$id',
-        params: { id: String(tvTmdbId) },
-        search: { play: true, playSeason: ep.season_number, playEpisode: ep.episode_number }
-      })
+      onFailure('Could not start that episode')
     } finally {
       setLoadingEpId(null)
     }
