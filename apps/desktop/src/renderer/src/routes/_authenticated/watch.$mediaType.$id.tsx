@@ -1413,7 +1413,6 @@ function WatchPage(): React.JSX.Element {
             durationSec={duration}
             currentBingeGroup={search.bingeGroup}
             onClose={closeEpisodesMenu}
-            onFailure={flashToast}
           />
         ) : null}
       </ContextMenu.Trigger>

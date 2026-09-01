@@ -1,4 +1,4 @@
-import { scrapeAndRace, type ResolveStage } from './stream-orchestrator'
+import { scrapeAndRace } from './stream-orchestrator'
 import type { TmdbEpisode, TmdbSeasonSummary } from './tmdb'
 
 export interface EpisodeCursor {
@@ -80,7 +80,6 @@ export async function resolveEpisodeWatch(args: {
   episode: number
   episodeName?: string | null
   bingeGroup?: string
-  onStage?: (stage: ResolveStage) => void
 }): Promise<EpisodeWatchSearch> {
   const { stream, url } = await scrapeAndRace({
     scrape: {
@@ -90,8 +89,7 @@ export async function resolveEpisodeWatch(args: {
       season: args.season,
       episode: args.episode
     },
-    bingeGroup: args.bingeGroup,
-    onStage: args.onStage
+    bingeGroup: args.bingeGroup
   })
   return {
     url,

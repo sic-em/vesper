@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, m as motion } from 'motion/react'
@@ -9,20 +9,6 @@ import { cn } from '@renderer/lib/cn'
 import { CloseIcon } from '@renderer/components/icons'
 import { ProgressBar } from '@renderer/components/ui/progress-bar'
 import { resolveEpisodeWatch } from '@renderer/lib/play-episode'
-import { ensureScrape, type ResolveStage } from '@renderer/lib/stream-orchestrator'
-
-/** How long a pointer must settle on a card before its stream is worth warming. */
-const WARM_HOVER_MS = 150
-
-/**
- * What each stage of a resolve is actually doing, in the viewer's terms. A spinner alone leaves a
- * multi-second wait feeling stalled; a stage that changes proves it is still moving.
- */
-const STAGE_LABEL: Record<ResolveStage, string> = {
-  finding: 'Finding sources',
-  opening: 'Opening stream',
-  starting: 'Starting'
-}
 
 interface Props {
   open: boolean
@@ -35,7 +21,6 @@ interface Props {
   durationSec: number
   currentBingeGroup?: string
   onClose: () => void
-  onFailure: (message: string) => void
 }
 
 export function EpisodesMenu({
@@ -48,12 +33,10 @@ export function EpisodesMenu({
   currentTimeSec,
   durationSec,
   currentBingeGroup,
-  onClose,
-  onFailure
+  onClose
 }: Props): React.JSX.Element {
   const navigate = useNavigate()
   const [loadingEpId, setLoadingEpId] = useState<number | null>(null)
-  const [loadingStage, setLoadingStage] = useState<ResolveStage>('finding')
   const details = useQuery({ ...tvDetailsQuery(tvTmdbId), enabled: open })
   const realSeasons = (details.data?.seasons ?? []).filter((s) => s.season_number >= 1)
   const seasonNumbers = realSeasons.map((s) => s.season_number)
@@ -93,28 +76,9 @@ export function EpisodesMenu({
     if (target) target.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' })
   }, [open, episodes.length, shownSeason, currentSeason, currentEpisode])
 
-  // Autoplay gets a running start: it warms the next episode's scrape when the up-next card
-  // appears, so the countdown is not where the wait begins. Picking from this rail started cold,
-  // which is why it felt slower than an automatic advance doing the very same work. A pointer
-  // resting on a card is the same kind of signal, so it earns the same head start. The scrape is
-  // cached for ten minutes, so a hover that never becomes a click costs one request at most.
-  const warmEpisode = useCallback(
-    (ep: TmdbEpisode): void => {
-      void ensureScrape({
-        mediaType: 'tv',
-        imdbId,
-        tmdbId: tvTmdbId,
-        season: ep.season_number,
-        episode: ep.episode_number
-      }).catch(() => {})
-    },
-    [imdbId, tvTmdbId]
-  )
-
   const openEpisode = async (ep: TmdbEpisode): Promise<void> => {
     if (loadingEpId !== null) return
     setLoadingEpId(ep.id)
-    setLoadingStage('finding')
     try {
       const search = await resolveEpisodeWatch({
         tvTmdbId,
@@ -123,8 +87,7 @@ export function EpisodesMenu({
         season: ep.season_number,
         episode: ep.episode_number,
         episodeName: ep.name,
-        bingeGroup: currentBingeGroup,
-        onStage: setLoadingStage
+        bingeGroup: currentBingeGroup
       })
       onClose()
       void navigate({
@@ -133,12 +96,13 @@ export function EpisodesMenu({
         search
       })
     } catch (err) {
-      // A failure used to close the player and land the viewer on the show page, which reads as
-      // the app losing its place rather than as one episode being unavailable. The next and
-      // previous buttons already say so and stay put; this now matches. The menu is left open so
-      // another episode is one click away instead of a journey back.
       console.error('Failed to resolve episode stream', err)
-      onFailure('Could not start that episode')
+      onClose()
+      void navigate({
+        to: '/tv/$id',
+        params: { id: String(tvTmdbId) },
+        search: { play: true, playSeason: ep.season_number, playEpisode: ep.episode_number }
+      })
     } finally {
       setLoadingEpId(null)
     }
@@ -221,11 +185,9 @@ export function EpisodesMenu({
                         isCurrent={isCurrent}
                         dimmed={showingCurrentEpisode && !isCurrent}
                         loading={loadingEpId === ep.id}
-                        loadingStage={loadingStage}
                         currentTimeSec={isCurrent ? currentTimeSec : 0}
                         durationSec={isCurrent ? durationSec : 0}
                         onClick={() => void openEpisode(ep)}
-                        onWarm={() => warmEpisode(ep)}
                       />
                     )
                   })}
@@ -251,50 +213,26 @@ function EpisodeCard({
   isCurrent,
   dimmed,
   loading,
-  loadingStage,
   currentTimeSec,
   durationSec,
-  onClick,
-  onWarm
+  onClick
 }: {
   episode: TmdbEpisode
   isCurrent: boolean
   dimmed: boolean
   loading: boolean
-  loadingStage: ResolveStage
   currentTimeSec: number
   durationSec: number
   onClick: () => void
-  onWarm: () => void
 }): React.JSX.Element {
   const still = tmdbImage(episode.still_path, 'w500')
   const played = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0
   const remainingSec = durationSec > 0 ? durationSec - currentTimeSec : 0
-
-  // Held off briefly so dragging the pointer along the rail does not scrape every episode it
-  // crosses; only a pointer that settles on a card counts as interest.
-  const warmTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const cancelWarm = (): void => {
-    if (warmTimer.current) {
-      clearTimeout(warmTimer.current)
-      warmTimer.current = null
-    }
-  }
-  useEffect(() => cancelWarm, [])
-  const scheduleWarm = (): void => {
-    cancelWarm()
-    warmTimer.current = setTimeout(onWarm, WARM_HOVER_MS)
-  }
-
   return (
     <button
       type="button"
       data-ep={episode.episode_number}
       onClick={onClick}
-      onPointerEnter={scheduleWarm}
-      onPointerLeave={cancelWarm}
-      onFocus={scheduleWarm}
-      onBlur={cancelWarm}
       aria-current={isCurrent ? 'true' : undefined}
       aria-label={`${episode.name}, season ${episode.season_number} episode ${episode.episode_number}`}
       className={cn(
@@ -333,11 +271,8 @@ function EpisodeCard({
           />
         ) : null}
         {loading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <div className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            <span className="text-[10px] leading-3 font-semibold tracking-[0.06em] text-white/75 uppercase">
-              {STAGE_LABEL[loadingStage]}
-            </span>
           </div>
         ) : null}
       </div>
