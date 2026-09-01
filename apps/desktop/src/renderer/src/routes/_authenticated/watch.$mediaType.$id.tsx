@@ -39,7 +39,8 @@ import {
   nextEpisodeCursor,
   previousEpisodeCursor,
   resolveEpisodeWatch,
-  type EpisodeCursor
+  type EpisodeCursor,
+  type EpisodeWatchSearch
 } from '@renderer/lib/play-episode'
 import { segmentsQuery, type IntroDbSegment } from '@renderer/lib/introdb'
 import {
@@ -1010,6 +1011,13 @@ function WatchPage(): React.JSX.Element {
   const [launching, setLaunching] = useState(false)
   const launchingRef = useRef(false)
 
+  // The up-next card is a promise that the next episode is ready, so it should be. Held as the
+  // in-flight promise rather than its result: pressing "Play now" while the preload is still
+  // running then joins the work already happening instead of starting a second, identical
+  // resolve and waiting on the slower of the two. Keyed by episode so a preload can never be
+  // handed to a different one than it was made for.
+  const preloadRef = useRef<{ key: string; promise: Promise<EpisodeWatchSearch> } | null>(null)
+
   // Every way into another episode resolves a stream and lands in the player. Sending the viewer
   // back to the show page instead — which is what the next button used to do — reads as a dead
   // button: the page highlights the episode and nothing plays.
@@ -1018,16 +1026,23 @@ function WatchPage(): React.JSX.Element {
       if (launchingRef.current) return
       launchingRef.current = true
       setLaunching(true)
+      const resolveArgs = {
+        tvTmdbId: tmdbId,
+        imdbId: search.imdbId,
+        showTitle: search.title,
+        season: cursor.season,
+        episode: cursor.episode,
+        episodeName: opts.name,
+        bingeGroup: search.bingeGroup
+      }
+      const cursorKey = `${search.imdbId}:${cursor.season}:${cursor.episode}`
+      const preloaded = preloadRef.current?.key === cursorKey ? preloadRef.current.promise : null
       try {
-        const nextSearch = await resolveEpisodeWatch({
-          tvTmdbId: tmdbId,
-          imdbId: search.imdbId,
-          showTitle: search.title,
-          season: cursor.season,
-          episode: cursor.episode,
-          episodeName: opts.name,
-          bingeGroup: search.bingeGroup
-        })
+        // A preload that failed must not condemn the launch — the link may simply have gone stale
+        // while it sat, and resolving again picks the next candidate.
+        const nextSearch = preloaded
+          ? await preloaded.catch(() => resolveEpisodeWatch(resolveArgs))
+          : await resolveEpisodeWatch(resolveArgs)
         if (opts.auto) noteAutoAdvance(search.imdbId)
         else resetAutoChain()
         void navigate({
@@ -1093,18 +1108,41 @@ function WatchPage(): React.JSX.Element {
 
   const secondsToAdvance = marks ? Math.max(0, Math.ceil(marks.advanceAtSec - timePos)) : 0
 
-  // Warm the next episode's scrape while the card is up, so pressing play (or the countdown
-  // running out) is not the moment the wait starts.
+  // The preload belongs to the episode it was made during. Landing on a new one drops it, so a
+  // resolve made for a chain the viewer has since left cannot be spent later.
+  useEffect(() => {
+    preloadRef.current = null
+  }, [episodeKey])
+
+  // Once the card is up, resolve the next episode in full rather than only warming its scrape.
+  // The card is on screen for the length of the credits, which is far longer than a resolve takes,
+  // so the whole wait can be spent while the viewer is still watching something. By the time the
+  // countdown ends — or they press play — the stream is a value already in hand.
   useEffect(() => {
     if (!upNextVisible || !nextCursor) return
-    void ensureScrape({
-      mediaType: 'tv',
+    const key = `${search.imdbId}:${nextCursor.season}:${nextCursor.episode}`
+    if (preloadRef.current?.key === key) return
+    const promise = resolveEpisodeWatch({
+      tvTmdbId: tmdbId,
       imdbId: search.imdbId,
-      tmdbId,
+      showTitle: search.title,
       season: nextCursor.season,
-      episode: nextCursor.episode
-    }).catch(() => {})
-  }, [upNextVisible, nextCursor, search.imdbId, tmdbId])
+      episode: nextCursor.episode,
+      episodeName: nextEpisodeRecord?.name,
+      bingeGroup: search.bingeGroup
+    })
+    // Attached here so a rejection is never an unhandled one; the launch does its own retry.
+    promise.catch(() => {})
+    preloadRef.current = { key, promise }
+  }, [
+    upNextVisible,
+    nextCursor,
+    search.imdbId,
+    search.title,
+    search.bingeGroup,
+    tmdbId,
+    nextEpisodeRecord
+  ])
 
   // The rollover is scheduled rather than polled, so it lands on the mark instead of on whichever
   // time update happens to cross it — and pausing during the credits calls the whole thing off
