@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, m as motion } from 'motion/react'
@@ -9,6 +9,10 @@ import { cn } from '@renderer/lib/cn'
 import { CloseIcon } from '@renderer/components/icons'
 import { ProgressBar } from '@renderer/components/ui/progress-bar'
 import { resolveEpisodeWatch } from '@renderer/lib/play-episode'
+import { ensureScrape } from '@renderer/lib/stream-orchestrator'
+
+/** How long a pointer must settle on a card before its stream is worth warming. */
+const WARM_HOVER_MS = 150
 
 interface Props {
   open: boolean
@@ -75,6 +79,24 @@ export function EpisodesMenu({
     )
     if (target) target.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'instant' })
   }, [open, episodes.length, shownSeason, currentSeason, currentEpisode])
+
+  // Autoplay gets a running start: it warms the next episode's scrape when the up-next card
+  // appears, so the countdown is not where the wait begins. Picking from this rail started cold,
+  // which is why it felt slower than an automatic advance doing the very same work. A pointer
+  // resting on a card is the same kind of signal, so it earns the same head start. The scrape is
+  // cached for ten minutes, so a hover that never becomes a click costs one request at most.
+  const warmEpisode = useCallback(
+    (ep: TmdbEpisode): void => {
+      void ensureScrape({
+        mediaType: 'tv',
+        imdbId,
+        tmdbId: tvTmdbId,
+        season: ep.season_number,
+        episode: ep.episode_number
+      }).catch(() => {})
+    },
+    [imdbId, tvTmdbId]
+  )
 
   const openEpisode = async (ep: TmdbEpisode): Promise<void> => {
     if (loadingEpId !== null) return
@@ -188,6 +210,7 @@ export function EpisodesMenu({
                         currentTimeSec={isCurrent ? currentTimeSec : 0}
                         durationSec={isCurrent ? durationSec : 0}
                         onClick={() => void openEpisode(ep)}
+                        onWarm={() => warmEpisode(ep)}
                       />
                     )
                   })}
@@ -215,7 +238,8 @@ function EpisodeCard({
   loading,
   currentTimeSec,
   durationSec,
-  onClick
+  onClick,
+  onWarm
 }: {
   episode: TmdbEpisode
   isCurrent: boolean
@@ -224,15 +248,36 @@ function EpisodeCard({
   currentTimeSec: number
   durationSec: number
   onClick: () => void
+  onWarm: () => void
 }): React.JSX.Element {
   const still = tmdbImage(episode.still_path, 'w500')
   const played = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0
   const remainingSec = durationSec > 0 ? durationSec - currentTimeSec : 0
+
+  // Held off briefly so dragging the pointer along the rail does not scrape every episode it
+  // crosses; only a pointer that settles on a card counts as interest.
+  const warmTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelWarm = (): void => {
+    if (warmTimer.current) {
+      clearTimeout(warmTimer.current)
+      warmTimer.current = null
+    }
+  }
+  useEffect(() => cancelWarm, [])
+  const scheduleWarm = (): void => {
+    cancelWarm()
+    warmTimer.current = setTimeout(onWarm, WARM_HOVER_MS)
+  }
+
   return (
     <button
       type="button"
       data-ep={episode.episode_number}
       onClick={onClick}
+      onPointerEnter={scheduleWarm}
+      onPointerLeave={cancelWarm}
+      onFocus={scheduleWarm}
+      onBlur={cancelWarm}
       aria-current={isCurrent ? 'true' : undefined}
       aria-label={`${episode.name}, season ${episode.season_number} episode ${episode.episode_number}`}
       className={cn(
