@@ -8,7 +8,6 @@ import { fetchSubtitles } from '@renderer/lib/opensubs'
 import { computeOsdbHash } from '@renderer/lib/osdb-hash'
 import { cn } from '@renderer/lib/cn'
 import { BufferOverlay } from '@renderer/components/player/buffer-overlay'
-import { EpisodesMenu } from '@renderer/components/player/episodes-menu'
 import { SubtitleMenu } from '@renderer/components/player/subtitle-menu'
 import { SubtitleOverlay, type SelectedSub } from '@renderer/components/player/subtitle-overlay'
 import { SubtitleOffsetHud } from '@renderer/components/player/subtitle-offset-hud'
@@ -147,7 +146,6 @@ function WatchPage(): React.JSX.Element {
 
   const [chromeVisible, setChromeVisible] = useState(true)
   const [menuOpenCount, setMenuOpenCount] = useState(0)
-  const [episodesOpen, setEpisodesOpen] = useState(false)
 
   const handleMenuOpenChange = (open: boolean): void => {
     setMenuOpenCount((c) => {
@@ -839,17 +837,6 @@ function WatchPage(): React.JSX.Element {
     }
   }, [menuOpenCount])
 
-  const openEpisodesMenu = (): void => {
-    if (episodesOpen) return
-    setEpisodesOpen(true)
-    handleMenuOpenChange(true)
-  }
-  const closeEpisodesMenu = (): void => {
-    if (!episodesOpen) return
-    setEpisodesOpen(false)
-    handleMenuOpenChange(false)
-  }
-
   // keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -1338,8 +1325,6 @@ function WatchPage(): React.JSX.Element {
             pipActive={pip.active}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
-            showEpisodesButton={search.mediaType === 'tv'}
-            onToggleEpisodes={openEpisodesMenu}
             variantSlot={
               spiderNoir ? (
                 <IconButton
@@ -1401,21 +1386,6 @@ function WatchPage(): React.JSX.Element {
             }
           />
         </ChromeOverlay>
-        {search.mediaType === 'tv' && search.season && search.episode ? (
-          <EpisodesMenu
-            open={episodesOpen}
-            tvTmdbId={Number(params.id)}
-            imdbId={search.imdbId}
-            showTitle={search.title}
-            currentSeason={search.season}
-            currentEpisode={search.episode}
-            currentTimeSec={timePos}
-            durationSec={duration}
-            currentBingeGroup={search.bingeGroup}
-            onClose={closeEpisodesMenu}
-            onFailure={flashToast}
-          />
-        ) : null}
       </ContextMenu.Trigger>
       <PlayerContextMenuPopup
         statsVisible={statsVisible}
@@ -1513,9 +1483,7 @@ function BottomBar({
   variantSlot,
   subtitleSlot,
   audioSlot,
-  externalPlayerSlot,
-  showEpisodesButton,
-  onToggleEpisodes
+  externalPlayerSlot
 }: {
   paused: boolean
   timePos: number
@@ -1538,8 +1506,6 @@ function BottomBar({
   subtitleSlot?: React.ReactNode
   audioSlot?: React.ReactNode
   externalPlayerSlot?: React.ReactNode
-  showEpisodesButton?: boolean
-  onToggleEpisodes?: () => void
 }): React.JSX.Element {
   const remaining = Math.max(0, (duration || 0) - timePos)
   return (
@@ -1607,11 +1573,6 @@ function BottomBar({
               <PipIcon />
             </IconButton>
             {externalPlayerSlot}
-            {showEpisodesButton ? (
-              <IconButton aria-label="Episodes" onClick={onToggleEpisodes}>
-                <QueueIcon />
-              </IconButton>
-            ) : null}
             <IconButton
               aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
               onClick={onToggleFullscreen}
@@ -1991,19 +1952,6 @@ function PipIcon(): React.JSX.Element {
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
       <path d="M3.5 6.75C3.5 6.05 4.05 5.5 4.75 5.5H17.25C17.94 5.5 18.5 6.05 18.5 6.75V11.25C18.5 11.66 18.83 12 19.25 12C19.66 12 20 11.66 20 11.25V6.75C20 5.23 18.76 4 17.25 4H4.75C3.23 4 2 5.23 2 6.75V15.25C2 16.76 3.23 18 4.75 18H9.25C9.66 18 10 17.66 10 17.25C10 16.83 9.66 16.5 9.25 16.5H4.75C4.05 16.5 3.5 15.94 3.5 15.25V6.75Z" />
       <path d="M14.25 14C13.00 14 12 15.00 12 16.25V18.75C12 19.99 13.00 21 14.25 21H19.75C20.99 21 22 19.99 22 18.75V16.25C22 15.00 20.99 14 19.75 14H14.25Z" />
-    </svg>
-  )
-}
-
-function QueueIcon(): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
-      <path d="M4.2 16.8C4.86 16.8 5.4 17.33 5.4 18C5.4 18.66 4.86 19.2 4.2 19.2C3.53 19.2 3 18.66 3 18C3 17.33 3.53 16.8 4.2 16.8Z" />
-      <path d="M20.25 17.25C20.66 17.25 21 17.58 21 18C21 18.41 20.66 18.75 20.25 18.75H8.75C8.33 18.75 8 18.41 8 18C8 17.58 8.33 17.25 8.75 17.25H20.25Z" />
-      <path d="M4.2 10.8C4.86 10.8 5.4 11.33 5.4 12C5.4 12.66 4.86 13.2 4.2 13.2C3.53 13.2 3 12.66 3 12C3 11.33 3.53 10.8 4.2 10.8Z" />
-      <path d="M20.25 11.25C20.66 11.25 21 11.58 21 12C21 12.41 20.66 12.75 20.25 12.75H8.75C8.33 12.75 8 12.41 8 12C8 11.58 8.33 11.25 8.75 11.25H20.25Z" />
-      <path d="M4.2 4.8C4.86 4.8 5.4 5.33 5.4 6C5.4 6.66 4.86 7.2 4.2 7.2C3.53 7.2 3 6.66 3 6C3 5.33 3.53 4.8 4.2 4.8Z" />
-      <path d="M20.25 5.25C20.66 5.25 21 5.58 21 6C21 6.41 20.66 6.75 20.25 6.75H8.75C8.33 6.75 8 6.41 8 6C8 5.58 8.33 5.25 8.75 5.25H20.25Z" />
     </svg>
   )
 }

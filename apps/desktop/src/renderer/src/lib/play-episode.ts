@@ -1,4 +1,4 @@
-import { scrapeAndRace, type ResolveStage } from './stream-orchestrator'
+import { scrapeAndRace } from './stream-orchestrator'
 import type { TmdbEpisode, TmdbSeasonSummary } from './tmdb'
 
 export interface EpisodeCursor {
@@ -68,9 +68,9 @@ export function formatEpisodeLabel(season: number, episode: number, name?: strin
 }
 
 /**
- * Resolve a playable stream for an episode and shape it into watch-route search params. Every way
- * into an episode — the episodes menu, the next/previous buttons, autoplay — goes through here, so
- * they all inherit the same binge-group continuity and dead-link fallback.
+ * Resolve a playable stream for an episode and shape it into watch-route search params. Next,
+ * previous, and autoplay all go through here so they inherit binge-group continuity and dead-link
+ * fallback.
  */
 export async function resolveEpisodeWatch(args: {
   tvTmdbId: number
@@ -80,7 +80,6 @@ export async function resolveEpisodeWatch(args: {
   episode: number
   episodeName?: string | null
   bingeGroup?: string
-  onStage?: (stage: ResolveStage) => void
 }): Promise<EpisodeWatchSearch> {
   const { stream, url } = await scrapeAndRace({
     scrape: {
@@ -90,8 +89,7 @@ export async function resolveEpisodeWatch(args: {
       season: args.season,
       episode: args.episode
     },
-    bingeGroup: args.bingeGroup,
-    onStage: args.onStage
+    bingeGroup: args.bingeGroup
   })
   return {
     url,
