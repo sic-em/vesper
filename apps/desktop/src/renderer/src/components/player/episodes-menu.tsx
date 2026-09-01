@@ -9,10 +9,20 @@ import { cn } from '@renderer/lib/cn'
 import { CloseIcon } from '@renderer/components/icons'
 import { ProgressBar } from '@renderer/components/ui/progress-bar'
 import { resolveEpisodeWatch } from '@renderer/lib/play-episode'
-import { ensureScrape } from '@renderer/lib/stream-orchestrator'
+import { ensureScrape, type ResolveStage } from '@renderer/lib/stream-orchestrator'
 
 /** How long a pointer must settle on a card before its stream is worth warming. */
 const WARM_HOVER_MS = 150
+
+/**
+ * What each stage of a resolve is actually doing, in the viewer's terms. A spinner alone leaves a
+ * multi-second wait feeling stalled; a stage that changes proves it is still moving.
+ */
+const STAGE_LABEL: Record<ResolveStage, string> = {
+  finding: 'Finding sources',
+  opening: 'Opening stream',
+  starting: 'Starting'
+}
 
 interface Props {
   open: boolean
@@ -41,6 +51,7 @@ export function EpisodesMenu({
 }: Props): React.JSX.Element {
   const navigate = useNavigate()
   const [loadingEpId, setLoadingEpId] = useState<number | null>(null)
+  const [loadingStage, setLoadingStage] = useState<ResolveStage>('finding')
   const details = useQuery({ ...tvDetailsQuery(tvTmdbId), enabled: open })
   const realSeasons = (details.data?.seasons ?? []).filter((s) => s.season_number >= 1)
   const seasonNumbers = realSeasons.map((s) => s.season_number)
@@ -101,6 +112,7 @@ export function EpisodesMenu({
   const openEpisode = async (ep: TmdbEpisode): Promise<void> => {
     if (loadingEpId !== null) return
     setLoadingEpId(ep.id)
+    setLoadingStage('finding')
     try {
       const search = await resolveEpisodeWatch({
         tvTmdbId,
@@ -109,7 +121,8 @@ export function EpisodesMenu({
         season: ep.season_number,
         episode: ep.episode_number,
         episodeName: ep.name,
-        bingeGroup: currentBingeGroup
+        bingeGroup: currentBingeGroup,
+        onStage: setLoadingStage
       })
       onClose()
       void navigate({
@@ -207,6 +220,7 @@ export function EpisodesMenu({
                         isCurrent={isCurrent}
                         dimmed={showingCurrentEpisode && !isCurrent}
                         loading={loadingEpId === ep.id}
+                        loadingStage={loadingStage}
                         currentTimeSec={isCurrent ? currentTimeSec : 0}
                         durationSec={isCurrent ? durationSec : 0}
                         onClick={() => void openEpisode(ep)}
@@ -236,6 +250,7 @@ function EpisodeCard({
   isCurrent,
   dimmed,
   loading,
+  loadingStage,
   currentTimeSec,
   durationSec,
   onClick,
@@ -245,6 +260,7 @@ function EpisodeCard({
   isCurrent: boolean
   dimmed: boolean
   loading: boolean
+  loadingStage: ResolveStage
   currentTimeSec: number
   durationSec: number
   onClick: () => void
@@ -316,8 +332,11 @@ function EpisodeCard({
           />
         ) : null}
         {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55">
             <div className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            <span className="text-[10px] leading-3 font-semibold tracking-[0.06em] text-white/75 uppercase">
+              {STAGE_LABEL[loadingStage]}
+            </span>
           </div>
         ) : null}
       </div>

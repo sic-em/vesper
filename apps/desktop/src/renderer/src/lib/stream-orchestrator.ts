@@ -88,12 +88,20 @@ export interface RaceResult {
   url: string
 }
 
+/**
+ * Where a resolve has got to. An unlabelled spinner makes a multi-second wait feel indefinite;
+ * naming the stage costs nothing and tells the viewer the wait is progressing rather than stuck.
+ */
+export type ResolveStage = 'finding' | 'opening' | 'starting'
+
 // Resolve the best cached stream for a title. Tries candidates in rank order; on a dead /
 // expired debrid link, auto-advances to the next. No P2P fallback (debrid-only, ADR-0008).
 export async function scrapeAndRace(args: {
   scrape: ScrapeKey
   bingeGroup?: string
+  onStage?: (stage: ResolveStage) => void
 }): Promise<RaceResult> {
+  args.onStage?.('finding')
   const streams = await ensureScrape(args.scrape)
   const candidates = topCandidates(streams, { bingeGroup: args.bingeGroup, topN: 5 })
   if (candidates.length === 0) throw new Error('no streams available')
@@ -111,7 +119,9 @@ export async function scrapeAndRace(args: {
     const ctrl = new AbortController()
     const timeoutId = window.setTimeout(() => ctrl.abort(), 15_000)
     try {
+      args.onStage?.('opening')
       const url = await resolveStreamUrl({ stream, context })
+      args.onStage?.('starting')
       await probePlayable(url, stream.videoSize, ctrl.signal)
       return { stream, url }
     } catch (e) {
