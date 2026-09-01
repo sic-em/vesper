@@ -7,6 +7,7 @@ import { tvDetailsQuery, tvSeasonQuery } from '@renderer/lib/tmdb-queries'
 import { tmdbImage, type TmdbEpisode } from '@renderer/lib/tmdb'
 import { cn } from '@renderer/lib/cn'
 import { CloseIcon } from '@renderer/components/icons'
+import { ProgressBar } from '@renderer/components/ui/progress-bar'
 import { resolveEpisodeWatch } from '@renderer/lib/play-episode'
 
 interface Props {
@@ -50,6 +51,11 @@ export function EpisodesMenu({
   })
   const episodes = seasonQuery.data?.episodes ?? []
   const showName = details.data?.name ?? ''
+  // Dimming the rest is what marks the current episode, so it may only kick in on the season that
+  // actually holds it — otherwise paging to another season would grey out every card at once.
+  const showingCurrentEpisode = episodes.some(
+    (ep) => ep.season_number === currentSeason && ep.episode_number === currentEpisode
+  )
 
   useEffect(() => {
     if (!open) return
@@ -177,6 +183,7 @@ export function EpisodesMenu({
                         key={ep.id}
                         episode={ep}
                         isCurrent={isCurrent}
+                        dimmed={showingCurrentEpisode && !isCurrent}
                         loading={loadingEpId === ep.id}
                         currentTimeSec={isCurrent ? currentTimeSec : 0}
                         durationSec={isCurrent ? durationSec : 0}
@@ -204,6 +211,7 @@ function useShownSeason(currentSeason: number, open: boolean): [number, (n: numb
 function EpisodeCard({
   episode,
   isCurrent,
+  dimmed,
   loading,
   currentTimeSec,
   durationSec,
@@ -211,29 +219,32 @@ function EpisodeCard({
 }: {
   episode: TmdbEpisode
   isCurrent: boolean
+  dimmed: boolean
   loading: boolean
   currentTimeSec: number
   durationSec: number
   onClick: () => void
 }): React.JSX.Element {
   const still = tmdbImage(episode.still_path, 'w500')
-  const label =
-    isCurrent && durationSec > 0
-      ? `${formatTime(currentTimeSec)} / ${formatTime(durationSec)}`
-      : `E${pad(episode.episode_number)}${episode.runtime ? `, ${episode.runtime}m` : ''}`
+  const played = durationSec > 0 ? (currentTimeSec / durationSec) * 100 : 0
+  const remainingSec = durationSec > 0 ? durationSec - currentTimeSec : 0
   return (
     <button
       type="button"
       data-ep={episode.episode_number}
       onClick={onClick}
+      aria-current={isCurrent ? 'true' : undefined}
       aria-label={`${episode.name}, season ${episode.season_number} episode ${episode.episode_number}`}
-      className="group/ep flex w-[200px] shrink-0 flex-col gap-2 text-left outline-none"
+      className={cn(
+        'group/ep flex w-[200px] shrink-0 flex-col gap-2 text-left outline-none transition-opacity duration-200',
+        // A ring gets swallowed by a bright still, so the episode being watched is marked by
+        // holding its brightness while the rest of the rail steps back. Hover restores a card so
+        // the dimming never reads as "disabled".
+        dimmed && 'opacity-55 hover:opacity-100 focus-visible:opacity-100'
+      )}
     >
       <div
-        className={cn(
-          'relative aspect-video w-full overflow-hidden rounded-lg bg-surface-3 bg-cover bg-center',
-          isCurrent && 'shadow-[inset_0_0_0_2px_rgba(255,255,255,0.45)]'
-        )}
+        className="relative aspect-video w-full overflow-hidden rounded-lg bg-surface-3 bg-cover bg-center"
         style={still ? { backgroundImage: `url(${still})` } : undefined}
       >
         <div
@@ -242,9 +253,23 @@ function EpisodeCard({
             background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.7) 100%)'
           }}
         />
-        <span className="absolute right-2 bottom-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] leading-4 font-medium text-white">
-          {label}
-        </span>
+        {isCurrent ? (
+          // Inverted against every other badge in the rail, so it is the one bright object.
+          <span className="absolute right-2 bottom-2 rounded bg-white px-1.5 py-0.5 text-[10px] leading-4 font-semibold tracking-[0.06em] text-black uppercase">
+            Now playing
+          </span>
+        ) : (
+          <span className="absolute right-2 bottom-2 rounded bg-black/60 px-1.5 py-0.5 text-[11px] leading-4 font-medium text-white">
+            {`E${pad(episode.episode_number)}${episode.runtime ? `, ${episode.runtime}m` : ''}`}
+          </span>
+        )}
+        {isCurrent && durationSec > 0 ? (
+          <ProgressBar
+            value={played}
+            tone="light"
+            className="absolute inset-x-0 bottom-0 rounded-none"
+          />
+        ) : null}
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <div className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -259,6 +284,11 @@ function EpisodeCard({
       >
         {episode.name}
       </span>
+      {isCurrent && remainingSec > 0 ? (
+        <span className="-mt-1 text-[11px] leading-4 font-medium text-white/55 drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]">
+          {formatRemaining(remainingSec)}
+        </span>
+      ) : null}
     </button>
   )
 }
@@ -304,8 +334,11 @@ function pad(n: number): string {
   return n < 10 ? `0${n}` : String(n)
 }
 
-function formatTime(sec: number): string {
-  const m = Math.floor(sec / 60)
-  const s = Math.floor(sec % 60)
-  return `${m}:${s.toString().padStart(2, '0')}`
+/** Time left on the episode. Hour-aware, so a feature-length finale never reads as "78 min left". */
+function formatRemaining(sec: number): string {
+  const minutes = Math.max(1, Math.round(sec / 60))
+  if (minutes < 60) return `${minutes} min left`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m === 0 ? `${h}h left` : `${h}h ${m}m left`
 }
