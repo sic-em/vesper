@@ -24,6 +24,9 @@ const STAGE_LABEL: Record<ResolveStage, string> = {
   starting: 'Starting'
 }
 
+/** The order the resolver moves through, and so the order the bar fills in. */
+const STAGE_ORDER: ResolveStage[] = ['finding', 'opening', 'starting']
+
 interface Props {
   open: boolean
   tvTmdbId: number
@@ -332,14 +335,7 @@ function EpisodeCard({
             className="absolute inset-x-0 bottom-0 rounded-none"
           />
         ) : null}
-        {loading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/55">
-            <div className="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            <span className="text-[10px] leading-3 font-semibold tracking-[0.06em] text-white/75 uppercase">
-              {STAGE_LABEL[loadingStage]}
-            </span>
-          </div>
-        ) : null}
+        {loading ? <ResolveLoader stage={loadingStage} /> : null}
       </div>
       <span
         className={cn(
@@ -355,6 +351,47 @@ function EpisodeCard({
         </span>
       ) : null}
     </button>
+  )
+}
+
+/**
+ * Starting an episode is roughly ten seconds of work, and a spinner spends all of it saying the
+ * same thing — second one and second nine look identical, so a wait that is progressing normally
+ * is indistinguishable from one that has hung. This splits the wait into the three round trips it
+ * actually is. Finished stages stay filled, so the bar only ever moves forward and the viewer can
+ * see how much of the wait is already behind them.
+ *
+ * The running stage sweeps rather than filling by a percentage. How long a scrape or a debrid
+ * resolve will take is genuinely unknown, and a bar creeping toward a number it invented would be
+ * a guess dressed up as progress.
+ */
+function ResolveLoader({ stage }: { stage: ResolveStage }): React.JSX.Element {
+  const active = STAGE_ORDER.indexOf(stage)
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-black/60 px-4"
+    >
+      <span className="text-[10px] leading-3 font-semibold tracking-[0.06em] text-white/80 uppercase">
+        {STAGE_LABEL[stage]}
+      </span>
+      <div aria-hidden className="flex w-full items-center gap-1">
+        {STAGE_ORDER.map((s, i) => (
+          <span
+            key={s}
+            className={cn(
+              'relative h-[3px] flex-1 overflow-hidden rounded-full',
+              i < active ? 'bg-white' : 'bg-white/20'
+            )}
+          >
+            {i === active ? (
+              <span className="resolve-sweep absolute inset-y-0 w-1/2 rounded-full bg-white" />
+            ) : null}
+          </span>
+        ))}
+      </div>
+    </div>
   )
 }
 
