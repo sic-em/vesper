@@ -98,25 +98,13 @@ export const sendRequest = mutation({
     }
 
     const { userIdA, userIdB } = canonicalPair(me, otherUserId)
-    const friendshipId = await ctx.db.insert('friendships', {
+    return await ctx.db.insert('friendships', {
       userIdA,
       userIdB,
       status: 'pending',
       requestedBy: me,
       createdAt: Date.now()
     })
-
-    const myProfile = await loadProfile(ctx, me)
-    await ctx.db.insert('notifications', {
-      userId: otherUserId,
-      kind: 'friend_request',
-      friendshipId,
-      actorUserId: me,
-      title: myProfile?.displayName,
-      createdAt: Date.now()
-    })
-
-    return friendshipId
   }
 })
 
@@ -129,7 +117,6 @@ export const cancelRequest = mutation({
     if (row.status !== 'pending') throw new Error('Not a pending request')
     if (row.requestedBy !== me) throw new Error('Not your request')
 
-    await deleteRelatedNotifications(ctx, row._id)
     await ctx.db.delete(row._id)
   }
 })
@@ -144,20 +131,7 @@ export const acceptRequest = mutation({
     if (row.requestedBy === me) throw new Error('Cannot accept your own request')
     if (row.userIdA !== me && row.userIdB !== me) throw new Error('Not authorized')
 
-    const now = Date.now()
-    await ctx.db.patch(friendshipId, { status: 'accepted', acceptedAt: now })
-
-    await deleteRelatedNotifications(ctx, friendshipId)
-
-    const myProfile = await loadProfile(ctx, me)
-    await ctx.db.insert('notifications', {
-      userId: row.requestedBy,
-      kind: 'friend_accept',
-      friendshipId,
-      actorUserId: me,
-      title: myProfile?.displayName,
-      createdAt: now
-    })
+    await ctx.db.patch(friendshipId, { status: 'accepted', acceptedAt: Date.now() })
   }
 })
 
@@ -171,7 +145,6 @@ export const declineRequest = mutation({
     if (row.requestedBy === me) throw new Error('Cannot decline your own request')
     if (row.userIdA !== me && row.userIdB !== me) throw new Error('Not authorized')
 
-    await deleteRelatedNotifications(ctx, friendshipId)
     await ctx.db.delete(friendshipId)
   }
 })
@@ -184,7 +157,6 @@ export const unfriend = mutation({
     if (!row) return
     if (row.status !== 'accepted') throw new Error('Not friends')
 
-    await deleteRelatedNotifications(ctx, row._id)
     await ctx.db.delete(row._id)
   }
 })
@@ -198,7 +170,6 @@ export const block = mutation({
     const row = await findFriendship(ctx, me, otherUserId)
     const now = Date.now()
     if (row) {
-      await deleteRelatedNotifications(ctx, row._id)
       await ctx.db.patch(row._id, { status: 'blocked', requestedBy: me, acceptedAt: undefined })
       return row._id
     }
@@ -420,17 +391,6 @@ export const counts = query({
     }
   }
 })
-
-async function deleteRelatedNotifications(
-  ctx: MutationCtx,
-  friendshipId: Id<'friendships'>
-): Promise<void> {
-  const notifs = await ctx.db
-    .query('notifications')
-    .filter((q) => q.eq(q.field('friendshipId'), friendshipId))
-    .collect()
-  await Promise.all(notifs.map((n) => ctx.db.delete(n._id)))
-}
 
 export const deleteAllForUser = internalMutation({
   args: { userId: v.id('users') },
