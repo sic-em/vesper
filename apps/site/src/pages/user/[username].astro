@@ -2,7 +2,7 @@
 export const prerender = false
 
 import Layout from "@/layouts/main.astro"
-import { getPublicProfile, type PublicListPreview } from "@/lib/convex"
+import { getPublicProfile } from "@/lib/convex"
 
 const { username } = Astro.params
 const safe = (username ?? "").trim()
@@ -35,10 +35,6 @@ function pad4(posters: string[]): string[] {
   const out = [...posters]
   while (out.length < 4) out.push(out[0])
   return out
-}
-
-function listHref(l: PublicListPreview): string {
-  return l.shortCode ? `/list/${l.shortCode}` : "#"
 }
 ---
 
@@ -128,7 +124,7 @@ function listHref(l: PublicListPreview): string {
               const padded = pad4(l.previewPosters)
               return (
                 <li>
-                  <a href={listHref(l)} class="group block">
+                  <div class="group block">
                     <div class="mb-3 aspect-square w-full overflow-hidden rounded-xl bg-muted">
                       {l.kind === "liked" ? (
                         <div
@@ -175,7 +171,7 @@ function listHref(l: PublicListPreview): string {
                     <div class="text-xs text-muted-foreground">
                       {l.itemCount} {l.itemCount === 1 ? "title" : "titles"}
                     </div>
-                  </a>
+                  </div>
                 </li>
               )
             })}

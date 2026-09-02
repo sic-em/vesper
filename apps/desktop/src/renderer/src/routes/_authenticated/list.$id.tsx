@@ -6,14 +6,11 @@ import { ItemsTable } from '@renderer/components/library/items-table'
 import { ListCover } from '@renderer/components/library/list-cover'
 import { ListContextMenu } from '@renderer/components/library/list-context-menu'
 import { MediaContextMenu } from '@renderer/components/library/media-context-menu'
-import { ShareListPopover } from '@renderer/components/library/share-list-popover'
-import { Avatar } from '@renderer/components/ui/avatar'
 import { IconButton } from '@renderer/components/ui/icon-button'
 import { ExpandingSearch } from '@renderer/components/ui/expanding-search'
 import { MenuDotsIcon } from '@renderer/components/icons'
 import { movieDetailsQuery, tvDetailsQuery } from '@renderer/lib/tmdb-queries'
 import { tmdbImage } from '@renderer/lib/tmdb'
-import { cn } from '@renderer/lib/cn'
 import { api } from '@convex/_generated/api'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 
@@ -36,40 +33,18 @@ type ViewMode = 'list' | 'grid'
 
 function ListPage(): React.JSX.Element {
   const { id } = Route.useParams()
-  const navigate = useNavigate()
-  const looksLikeShortCode = id.length <= 8
-  const resolved = useConvexQuery(
-    api.lists.resolveByShortCode,
-    looksLikeShortCode ? { shortCode: id } : 'skip'
-  )
-
-  useEffect(() => {
-    if (!looksLikeShortCode) return
-    if (resolved == null) return
-    navigate({
-      to: '/list/$id',
-      params: { id: resolved as string },
-      replace: true,
-      viewTransition: false
-    })
-  }, [looksLikeShortCode, resolved, navigate])
-
-  const isShortCode = looksLikeShortCode
   const listId = id as Id<'lists'>
-  const list = useConvexQuery(api.lists.listById, isShortCode ? 'skip' : { listId })
-  const me = useConvexQuery(api.profiles.me)
+  const list = useConvexQuery(api.lists.listById, { listId })
   const [view, setView] = useState<ViewMode>('list')
 
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search, 200)
   const searching = debouncedSearch.trim().length > 0
 
-  const base = usePaginatedQuery(api.lists.listItems, isShortCode ? 'skip' : { listId }, {
-    initialNumItems: PAGE_SIZE
-  })
+  const base = usePaginatedQuery(api.lists.listItems, { listId }, { initialNumItems: PAGE_SIZE })
   const found = usePaginatedQuery(
     api.lists.searchListItems,
-    searching && !isShortCode ? { listId, query: debouncedSearch } : 'skip',
+    searching ? { listId, query: debouncedSearch } : 'skip',
     { initialNumItems: PAGE_SIZE }
   )
   const items = base.results
@@ -81,17 +56,6 @@ function ListPage(): React.JSX.Element {
     showRatings && list?.viewerRole === 'owner' ? {} : 'skip'
   )
 
-  if (isShortCode) {
-    if (resolved === null) {
-      return (
-        <div className="flex h-[60vh] items-center justify-center text-text-tertiary">
-          List not found
-        </div>
-      )
-    }
-    return <div className="px-6 py-8" />
-  }
-
   if (list === undefined) return <div className="px-6 py-8" />
   if (list === null) {
     return (
@@ -102,8 +66,6 @@ function ListPage(): React.JSX.Element {
   }
 
   const isOwner = list.viewerRole === 'owner'
-  const viewerUserId = me?.profile?.userId
-  const hasMembers = list.members.length > 0
   const ratingsMap = new Map<string, number>()
   if (ratingsList) {
     for (const r of ratingsList) {
@@ -136,9 +98,7 @@ function ListPage(): React.JSX.Element {
           items={tableItems}
           status={status}
           loadMore={loadMore}
-          viewerUserId={viewerUserId}
-          viewerRole={list.viewerRole}
-          hasMembers={hasMembers}
+          canRemove={isOwner}
           showRating={showRatings}
           ratingsMap={ratingsMap}
         />
@@ -148,20 +108,14 @@ function ListPage(): React.JSX.Element {
           items={tableItems}
           status={status}
           loadMore={loadMore}
-          viewerUserId={viewerUserId}
-          viewerRole={list.viewerRole}
-          hasMembers={hasMembers}
+          canRemove={isOwner}
         />
       )}
     </div>
   )
 }
 
-interface ListItem extends Doc<'listItems'> {
-  addedByAvatar?: string
-  addedByName?: string
-  addedByUsername?: string
-}
+type ListItem = Doc<'listItems'>
 
 interface ListOwner {
   userId: Id<'users'>
@@ -170,18 +124,9 @@ interface ListOwner {
   avatarUrl?: string
 }
 
-interface ListMember {
-  userId: Id<'users'>
-  username: string
-  displayName: string
-  avatarUrl?: string
-}
-
 type ListWithOwner = Doc<'lists'> & {
   owner: ListOwner | null
-  members: ListMember[]
-  viewerRole: 'owner' | 'editor' | 'viewer'
-  joinCode?: string
+  viewerRole: 'owner' | 'viewer'
 }
 
 function ListHeader({
@@ -214,40 +159,8 @@ function ListHeader({
   const ownerName = list.owner?.displayName ?? list.owner?.username ?? 'Unknown'
   const ownerUsername = list.owner?.username
   const ownerAvatar = list.owner?.avatarUrl
-  const hasMembers = list.members.length > 0
 
-  const stack = (
-    <span className="flex items-center gap-2 text-text">
-      <AvatarStack
-        avatars={[
-          {
-            src: ownerAvatar,
-            key: list.owner?.userId ?? 'owner',
-            seed: list.owner?.username ?? 'owner',
-            alt: list.owner?.displayName
-          },
-          ...list.members.slice(0, 3).map((m) => ({
-            src: m.avatarUrl,
-            key: m.userId as string,
-            seed: m.username,
-            alt: m.displayName
-          }))
-        ]}
-        extra={Math.max(0, list.members.length - 3)}
-      />
-      {hasMembers ? (
-        <span className="text-text">
-          {ownerName} +{list.members.length}
-        </span>
-      ) : (
-        <span>{ownerName}</span>
-      )}
-    </span>
-  )
-
-  const ownerNode = hasMembers ? (
-    stack
-  ) : (
+  const ownerNode = (
     <span className="flex items-center gap-2 text-text">
       <span
         className="inline-block size-5 rounded-full bg-surface-3 bg-cover bg-center"
@@ -312,13 +225,6 @@ function ListHeader({
               onValueChange={onSearchChange}
               placeholder="Search in list"
             />
-            {isOwner && !list.locked ? (
-              <ShareListPopover list={list}>
-                <IconButton variant="soft" size="md" aria-label="Share & collaborators">
-                  <PeopleSparklesGlyph className="size-[16px]" />
-                </IconButton>
-              </ShareListPopover>
-            ) : null}
             <IconButton
               variant="soft"
               size="md"
@@ -418,17 +324,13 @@ function ItemsGrid({
   items,
   status,
   loadMore,
-  viewerUserId,
-  viewerRole,
-  hasMembers
+  canRemove
 }: {
   listId: Id<'lists'>
   items: ListItem[]
   status: ReturnType<typeof usePaginatedQuery>['status']
   loadMore: (n: number) => void
-  viewerUserId?: Id<'users'>
-  viewerRole: 'owner' | 'editor' | 'viewer'
-  hasMembers: boolean
+  canRemove: boolean
 }): React.JSX.Element {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
@@ -450,14 +352,7 @@ function ItemsGrid({
     <div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
         {items.map((item) => (
-          <GridCard
-            key={item._id}
-            listId={listId}
-            item={item}
-            viewerUserId={viewerUserId}
-            viewerRole={viewerRole}
-            hasMembers={hasMembers}
-          />
+          <GridCard key={item._id} listId={listId} item={item} canRemove={canRemove} />
         ))}
       </div>
       <div ref={sentinelRef} className="h-4" />
@@ -468,21 +363,15 @@ function ItemsGrid({
 function GridCard({
   listId,
   item,
-  viewerUserId,
-  viewerRole,
-  hasMembers
+  canRemove
 }: {
   listId: Id<'lists'>
   item: ListItem
-  viewerUserId?: Id<'users'>
-  viewerRole: 'owner' | 'editor' | 'viewer'
-  hasMembers: boolean
+  canRemove: boolean
 }): React.JSX.Element {
   const navigate = useNavigate()
   const removeFromList = useMutation(api.lists.removeFromList)
   const isMovie = item.mediaType === 'movie'
-  const canRemove =
-    viewerRole === 'owner' || (viewerRole === 'editor' && item.addedBy === viewerUserId)
   const go = (): void => {
     navigate({
       to: isMovie ? '/movie/$id' : '/tv/$id',
@@ -507,77 +396,8 @@ function GridCard({
           className="aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-2 bg-cover bg-center outline-none"
           style={poster ? { backgroundImage: `url(${poster})` } : undefined}
         />
-        {hasMembers ? (
-          <AddedByDot
-            avatarUrl={item.addedByAvatar}
-            title={item.addedByName ? `Added by ${item.addedByName}` : undefined}
-            className="absolute top-1.5 right-1.5 size-5 border-2"
-          />
-        ) : null}
       </div>
     </MediaContextMenu>
-  )
-}
-
-function AvatarStack({
-  avatars,
-  extra
-}: {
-  avatars: Array<{ src?: string; key: string; seed?: string; alt?: string }>
-  extra: number
-}): React.JSX.Element {
-  return (
-    <span className="flex -space-x-1.5">
-      {avatars.map((a) => (
-        <Avatar
-          key={a.key}
-          size="xs"
-          src={a.src}
-          seed={a.seed ?? a.key}
-          alt={a.alt}
-          className="border-2 border-surface"
-        />
-      ))}
-      {extra > 0 ? (
-        <span className="flex min-size-5 items-center justify-center rounded-full border-2 border-surface bg-surface-3 px-1 text-[9px] font-medium text-text">
-          +{extra}
-        </span>
-      ) : null}
-    </span>
-  )
-}
-
-function AddedByDot({
-  avatarUrl,
-  seed,
-  title,
-  className
-}: {
-  avatarUrl?: string
-  seed?: string
-  title?: string
-  className?: string
-}): React.JSX.Element {
-  return (
-    <Avatar
-      size="xs"
-      src={avatarUrl}
-      seed={seed ?? title ?? 'user'}
-      alt={title}
-      title={title}
-      className={cn('size-4 border border-surface', className)}
-    />
-  )
-}
-
-function PeopleSparklesGlyph({ className }: { className?: string }): React.JSX.Element {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
-      <path d="M12.00 12.5C13.09 12.5 14.11 12.69 15.04 13.04L14.76 13.76L12.88 14.48C12.05 14.80 11.50 15.60 11.50 16.5C11.50 17.39 12.05 18.19 12.88 18.51L14.76 19.23L15.44 21H6.69C5.89 21 5.15 20.64 4.67 20.07C4.18 19.49 3.97 18.68 4.28 17.85C5.43 14.72 8.28 12.5 12.00 12.5Z" />
-      <path d="M17.5 12C17.77 12 18.01 12.16 18.11 12.41L18.89 14.45C19.00 14.75 19.24 14.99 19.54 15.10L21.58 15.88C21.83 15.98 22 16.22 22 16.5C22 16.77 21.83 17.01 21.58 17.11L19.54 17.89C19.24 18.00 19.00 18.24 18.89 18.54L18.11 20.58C18.01 20.83 17.77 21 17.5 21C17.22 21 16.98 20.83 16.88 20.58L16.10 18.54C16.08 18.49 16.06 18.45 16.04 18.41C16.02 18.36 15.99 18.32 15.96 18.28C15.83 18.11 15.66 17.97 15.45 17.89L13.41 17.11C13.16 17.01 13 16.77 13 16.5C13 16.22 13.16 15.98 13.41 15.88L15.45 15.10C15.75 14.99 15.99 14.75 16.10 14.45L16.88 12.41C16.98 12.16 17.22 12 17.5 12Z" />
-      <path d="M4 7.5C4.18 7.5 4.34 7.61 4.40 7.78L4.89 9.03C4.99 9.29 5.20 9.50 5.46 9.60L6.71 10.09C6.88 10.15 7 10.31 7 10.5C7 10.68 6.88 10.84 6.71 10.90L5.46 11.39C5.20 11.49 4.99 11.70 4.89 11.96L4.40 13.21C4.34 13.38 4.18 13.5 4 13.5C3.81 13.5 3.65 13.38 3.59 13.21L3.10 11.96C3.00 11.70 2.79 11.49 2.53 11.39L1.28 10.90C1.11 10.84 1 10.68 1 10.5C1 10.31 1.11 10.15 1.28 10.09L2.53 9.60C2.79 9.50 3.00 9.29 3.10 9.03L3.59 7.78C3.65 7.61 3.81 7.5 4 7.5Z" />
-      <path d="M12 2C14.48 2.00 16.5 4.01 16.5 6.5C16.5 8.98 14.48 11 12 11C9.51 10.99 7.5 8.98 7.5 6.5C7.5 4.01 9.51 2.00 12 2Z" />
-    </svg>
   )
 }
 

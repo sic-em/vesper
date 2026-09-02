@@ -27,70 +27,16 @@ function assertListCoverKey(key: string, userId: string): void {
   const expected = `${LIST_COVER_PREFIX}${userId}/`
   if (!key.startsWith(expected)) throw new Error('Key not owned by user')
 }
-const SHORTCODE_ALPHABET = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-const SHORTCODE_LEN = 6
-
-function randomShortCode(): string {
-  let out = ''
-  for (let i = 0; i < SHORTCODE_LEN; i++) {
-    out += SHORTCODE_ALPHABET[Math.floor(Math.random() * SHORTCODE_ALPHABET.length)]
-  }
-  return out
-}
-
-async function uniqueShortCode(ctx: MutationCtx): Promise<string> {
-  for (let i = 0; i < 6; i++) {
-    const code = randomShortCode()
-    const collision = await ctx.db
-      .query('lists')
-      .withIndex('by_shortCode', (q) => q.eq('shortCode', code))
-      .unique()
-    if (!collision) return code
-  }
-  throw new Error('Failed to mint unique shortCode')
-}
-
-async function uniqueJoinCode(ctx: MutationCtx): Promise<string> {
-  for (let i = 0; i < 6; i++) {
-    const code = randomShortCode()
-    const collision = await ctx.db
-      .query('lists')
-      .withIndex('by_joinCode', (q) => q.eq('joinCode', code))
-      .unique()
-    if (!collision) return code
-  }
-  throw new Error('Failed to mint unique joinCode')
-}
-
 async function requireUserId(ctx: QueryCtx | MutationCtx): Promise<Id<'users'>> {
   const userId = await getAuthUserId(ctx)
   if (userId === null) throw new Error('Not authenticated')
   return userId
 }
 
-async function getMembership(
-  ctx: QueryCtx | MutationCtx,
-  listId: Id<'lists'>,
-  userId: Id<'users'>
-): Promise<Doc<'listMembers'> | null> {
-  return await ctx.db
-    .query('listMembers')
-    .withIndex('by_listId_and_userId', (q) => q.eq('listId', listId).eq('userId', userId))
-    .unique()
-}
+export type ViewerRole = 'owner' | 'viewer' | 'none'
 
-export type ViewerRole = 'owner' | 'editor' | 'viewer' | 'none'
-
-async function getViewerRole(
-  ctx: QueryCtx | MutationCtx,
-  list: Doc<'lists'>,
-  userId: Id<'users'> | null
-): Promise<ViewerRole> {
+function getViewerRole(list: Doc<'lists'>, userId: Id<'users'> | null): ViewerRole {
   if (userId && list.userId === userId) return 'owner'
-  if (userId) {
-    const m = await getMembership(ctx, list._id, userId)
-    if (m) return 'editor'
-  }
   if (list.visibility === 'public') return 'viewer'
   return 'none'
 }
@@ -103,62 +49,15 @@ async function requireOwnedList(ctx: MutationCtx, listId: Id<'lists'>): Promise<
   return list
 }
 
-async function requireWriteAccess(
-  ctx: MutationCtx,
-  listId: Id<'lists'>
-): Promise<{ list: Doc<'lists'>; userId: Id<'users'>; role: 'owner' | 'editor' }> {
-  const userId = await requireUserId(ctx)
-  const list = await ctx.db.get(listId)
-  if (!list) throw new Error('List not found')
-  if (list.userId === userId) return { list, userId, role: 'owner' }
-  const m = await getMembership(ctx, listId, userId)
-  if (m) return { list, userId, role: 'editor' }
-  throw new Error('Not authorized')
-}
-
-async function areFriends(
-  ctx: QueryCtx | MutationCtx,
-  a: Id<'users'>,
-  b: Id<'users'>
-): Promise<boolean> {
-  const [lo, hi] = a < b ? [a, b] : [b, a]
-  const f = await ctx.db
-    .query('friendships')
-    .withIndex('by_userIdA_and_userIdB', (q) => q.eq('userIdA', lo).eq('userIdB', hi))
-    .unique()
-  return !!f && f.status === 'accepted'
-}
-
 export const myLists = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx)
     if (userId === null) return []
-    const owned = await ctx.db
+    const all = await ctx.db
       .query('lists')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .collect()
-    const memberships = await ctx.db
-      .query('listMembers')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .collect()
-    const collabLists = (await Promise.all(memberships.map((m) => ctx.db.get(m.listId)))).filter(
-      (l): l is Doc<'lists'> => !!l && l.userId !== userId
-    )
-    const all = [...owned, ...collabLists]
-
-    const ownerIds = Array.from(new Set(all.map((l) => l.userId)))
-    const ownerProfiles = await Promise.all(
-      ownerIds.map((id) =>
-        ctx.db
-          .query('profiles')
-          .withIndex('by_userId', (q) => q.eq('userId', id))
-          .unique()
-      )
-    )
-    const profileByUser = new Map(
-      ownerProfiles.filter((p): p is Doc<'profiles'> => !!p).map((p) => [p.userId, p] as const)
-    )
 
     const pins = await ctx.db
       .query('listPins')
@@ -179,21 +78,10 @@ export const myLists = query({
           .withIndex('by_listId_and_addedAt', (q) => q.eq('listId', list._id))
           .order('desc')
           .take(4)
-        const ownerProfile = profileByUser.get(list.userId) ?? null
-        const owner = ownerProfile
-          ? {
-              userId: ownerProfile.userId,
-              username: ownerProfile.username,
-              displayName: ownerProfile.displayName,
-              avatarUrl: ownerProfile.avatarUrl
-            }
-          : null
         const pinnedAt = pinByListId.get(list._id)
         return {
           ...list,
           recentItems: items,
-          owner,
-          viewerRole: (list.userId === userId ? 'owner' : 'editor') as 'owner' | 'editor',
           pinned: pinnedAt !== undefined,
           pinnedAt,
           rank: rankByListId.get(list._id)
@@ -231,13 +119,7 @@ export const pinList = mutation({
     const list = await ctx.db.get(listId)
     if (!list) throw new Error('List not found')
     if (list.kind !== 'custom') throw new Error('Only custom lists can be pinned')
-    const canSee =
-      list.userId === userId ||
-      (await ctx.db
-        .query('listMembers')
-        .withIndex('by_listId_and_userId', (q) => q.eq('listId', listId).eq('userId', userId))
-        .first()) !== null
-    if (!canSee) throw new Error('Not authorized')
+    if (list.userId !== userId) throw new Error('Not authorized')
     const existing = await ctx.db
       .query('listPins')
       .withIndex('by_userId_and_listId', (q) => q.eq('userId', userId).eq('listId', listId))
@@ -274,8 +156,7 @@ export const reorderList = mutation({
     const list = await ctx.db.get(listId)
     if (!list) throw new Error('List not found')
     if (list.kind !== 'custom') throw new Error('Only custom lists can be reordered')
-    const canSee = list.userId === userId || (await getMembership(ctx, listId, userId)) !== null
-    if (!canSee) throw new Error('Not authorized')
+    if (list.userId !== userId) throw new Error('Not authorized')
 
     const orderRows = await ctx.db
       .query('listOrder')
@@ -287,14 +168,7 @@ export const reorderList = mutation({
       .query('lists')
       .withIndex('by_userId', (q) => q.eq('userId', userId))
       .collect()
-    const memberships = await ctx.db
-      .query('listMembers')
-      .withIndex('by_userId', (q) => q.eq('userId', userId))
-      .collect()
-    const collabLists = (await Promise.all(memberships.map((m) => ctx.db.get(m.listId)))).filter(
-      (l): l is Doc<'lists'> => !!l && l.userId !== userId
-    )
-    const customLists = [...owned, ...collabLists].filter((l) => l.kind === 'custom')
+    const customLists = owned.filter((l) => l.kind === 'custom')
 
     const pins = await ctx.db
       .query('listPins')
@@ -395,33 +269,13 @@ export const publicByUsername = query({
   }
 })
 
-export const resolveByShortCode = query({
-  args: { shortCode: v.string() },
-  handler: async (ctx, { shortCode }) => {
-    const userId = await getAuthUserId(ctx)
-    const list = await ctx.db
-      .query('lists')
-      .withIndex('by_shortCode', (q) => q.eq('shortCode', shortCode))
-      .unique()
-    if (!list) return null
-    if (list.visibility === 'public') return list._id
-    if (userId === null) return null
-    if (list.userId === userId) return list._id
-    const m = await ctx.db
-      .query('listMembers')
-      .withIndex('by_listId_and_userId', (q) => q.eq('listId', list._id).eq('userId', userId))
-      .unique()
-    return m ? list._id : null
-  }
-})
-
 export const listById = query({
   args: { listId: v.id('lists') },
   handler: async (ctx, { listId }) => {
     const userId = await getAuthUserId(ctx)
     const list = await ctx.db.get(listId)
     if (!list) return null
-    const viewerRole = await getViewerRole(ctx, list, userId)
+    const viewerRole = getViewerRole(list, userId)
     if (viewerRole === 'none') return null
     const ownerProfile = await ctx.db
       .query('profiles')
@@ -435,66 +289,14 @@ export const listById = query({
           avatarUrl: ownerProfile.avatarUrl
         }
       : null
-    const memberRows = await ctx.db
-      .query('listMembers')
-      .withIndex('by_listId', (q) => q.eq('listId', list._id))
-      .collect()
-    const memberProfiles = await Promise.all(
-      memberRows.map((m) =>
-        ctx.db
-          .query('profiles')
-          .withIndex('by_userId', (q) => q.eq('userId', m.userId))
-          .unique()
-      )
-    )
-    const members = memberProfiles
-      .filter((p): p is Doc<'profiles'> => !!p)
-      .map((p) => ({
-        userId: p.userId,
-        username: p.username,
-        displayName: p.displayName,
-        avatarUrl: p.avatarUrl
-      }))
     return {
       ...list,
-      joinCode: viewerRole === 'owner' ? list.joinCode : undefined,
+      joinCode: undefined,
       owner,
-      members,
       viewerRole
     }
   }
 })
-
-async function enrichWithAddedBy(
-  ctx: QueryCtx,
-  items: Doc<'listItems'>[]
-): Promise<
-  Array<
-    Doc<'listItems'> & { addedByAvatar?: string; addedByName?: string; addedByUsername?: string }
-  >
-> {
-  const uniqueAddedBy = Array.from(new Set(items.map((i) => i.addedBy)))
-  const profiles = await Promise.all(
-    uniqueAddedBy.map((id) =>
-      ctx.db
-        .query('profiles')
-        .withIndex('by_userId', (q) => q.eq('userId', id))
-        .unique()
-    )
-  )
-  const profileByUser = new Map(
-    profiles.filter((p): p is Doc<'profiles'> => !!p).map((p) => [p.userId, p] as const)
-  )
-  return items.map((i) => {
-    const p = profileByUser.get(i.addedBy)
-    return {
-      ...i,
-      addedByAvatar: p?.avatarUrl,
-      addedByName: p?.displayName,
-      addedByUsername: p?.username
-    }
-  })
-}
 
 export const listItems = query({
   args: { listId: v.id('lists'), paginationOpts: paginationOptsValidator },
@@ -502,14 +304,13 @@ export const listItems = query({
     const userId = await getAuthUserId(ctx)
     const list = await ctx.db.get(listId)
     if (!list) return { page: [], isDone: true, continueCursor: '' }
-    const viewerRole = await getViewerRole(ctx, list, userId)
+    const viewerRole = getViewerRole(list, userId)
     if (viewerRole === 'none') return { page: [], isDone: true, continueCursor: '' }
-    const result = await ctx.db
+    return await ctx.db
       .query('listItems')
       .withIndex('by_listId_and_addedAt', (q) => q.eq('listId', listId))
       .order('desc')
       .paginate(paginationOpts)
-    return { ...result, page: await enrichWithAddedBy(ctx, result.page) }
   }
 })
 
@@ -522,13 +323,12 @@ export const searchListItems = query({
     const userId = await getAuthUserId(ctx)
     const list = await ctx.db.get(listId)
     if (!list) return empty
-    const viewerRole = await getViewerRole(ctx, list, userId)
+    const viewerRole = getViewerRole(list, userId)
     if (viewerRole === 'none') return empty
-    const result = await ctx.db
+    return await ctx.db
       .query('listItems')
       .withSearchIndex('search_title', (q) => q.search('title', term).eq('listId', listId))
       .paginate(paginationOpts)
-    return { ...result, page: await enrichWithAddedBy(ctx, result.page) }
   }
 })
 
@@ -566,7 +366,6 @@ export const createList = mutation({
     if (args.coverKey) {
       assertListCoverKey(args.coverKey, userId)
     }
-    const shortCode = await uniqueShortCode(ctx)
     return await ctx.db.insert('lists', {
       userId,
       name,
@@ -577,7 +376,6 @@ export const createList = mutation({
       coverKey: args.coverKey,
       locked: false,
       itemCount: 0,
-      shortCode,
       createdAt: Date.now()
     })
   }
@@ -617,8 +415,8 @@ export const updateList = mutation({
 export const setListCover = mutation({
   args: { listId: v.id('lists'), key: v.string() },
   handler: async (ctx, { listId, key }) => {
-    const { list, userId } = await requireWriteAccess(ctx, listId)
-    assertListCoverKey(key, userId)
+    const list = await requireOwnedList(ctx, listId)
+    assertListCoverKey(key, list.userId)
     const oldKey = list.coverKey
     await ctx.db.patch(listId, { coverUrl: publicUrl(key), coverKey: key })
     if (oldKey && oldKey !== key) {
@@ -630,7 +428,7 @@ export const setListCover = mutation({
 export const removeListCover = mutation({
   args: { listId: v.id('lists') },
   handler: async (ctx, { listId }) => {
-    const { list } = await requireWriteAccess(ctx, listId)
+    const list = await requireOwnedList(ctx, listId)
     const oldKey = list.coverKey
     await ctx.db.patch(listId, { coverUrl: undefined, coverKey: undefined })
     if (oldKey) {
@@ -649,21 +447,6 @@ export const deleteList = mutation({
       .withIndex('by_listId', (q) => q.eq('listId', listId))
       .collect()
     await Promise.all(items.map((i) => ctx.db.delete(i._id)))
-    const members = await ctx.db
-      .query('listMembers')
-      .withIndex('by_listId', (q) => q.eq('listId', listId))
-      .collect()
-    const now = Date.now()
-    for (const m of members) {
-      await ctx.db.delete(m._id)
-      await ctx.db.insert('notifications', {
-        userId: m.userId,
-        kind: 'list_removed',
-        actorUserId: list.userId,
-        listName: list.name,
-        createdAt: now
-      })
-    }
     if (list.coverKey) {
       await ctx.scheduler.runAfter(0, internal.uploads.deleteObject, { key: list.coverKey })
     }
@@ -684,11 +467,7 @@ export const setMembership = mutation({
 
     for (const listId of listIds) {
       const list = await ctx.db.get(listId)
-      if (!list) throw new Error('Not authorized')
-      if (list.userId !== userId) {
-        const m = await getMembership(ctx, listId, userId)
-        if (!m) throw new Error('Not authorized')
-      }
+      if (!list || list.userId !== userId) throw new Error('Not authorized')
     }
 
     const existing = await ctx.db
@@ -779,7 +558,6 @@ export const cloneList = mutation({
       .collect()
     const now = Date.now()
     const cloneName = `${source.name} (copy)`.slice(0, NAME_MAX)
-    const shortCode = await uniqueShortCode(ctx)
     const newListId = await ctx.db.insert('lists', {
       userId,
       name: cloneName,
@@ -788,7 +566,6 @@ export const cloneList = mutation({
       visibility: 'private',
       locked: false,
       itemCount: sourceItems.length,
-      shortCode,
       createdAt: now,
       lastItemAddedAt: sourceItems.length > 0 ? now : undefined
     })
@@ -810,17 +587,14 @@ export const cloneList = mutation({
 export const removeFromList = mutation({
   args: { listId: v.id('lists'), listItemId: v.id('listItems') },
   handler: async (ctx, { listId, listItemId }) => {
-    const { list, userId, role } = await requireWriteAccess(ctx, listId)
+    const list = await requireOwnedList(ctx, listId)
     const item = await ctx.db.get(listItemId)
     if (!item || item.listId !== listId) throw new Error('Item not in list')
-    if (role === 'editor' && item.addedBy !== userId) {
-      throw new Error('Editors can only remove items they added')
-    }
     await ctx.db.delete(listItemId)
     await ctx.db.patch(listId, { itemCount: Math.max(0, list.itemCount - 1) })
     if (list.kind === 'liked') {
       await ctx.scheduler.runAfter(0, internal.trakt.pushFavorite, {
-        userId,
+        userId: list.userId,
         mediaType: item.mediaType,
         tmdbId: item.tmdbId,
         remove: true
@@ -838,7 +612,6 @@ async function getOrCreateWatchedList(
     .withIndex('by_userId_and_kind', (q) => q.eq('userId', userId).eq('kind', 'watched'))
     .unique()
   if (existing) return existing
-  const shortCode = await uniqueShortCode(ctx)
   const id = await ctx.db.insert('lists', {
     userId,
     name: 'Watched',
@@ -846,7 +619,6 @@ async function getOrCreateWatchedList(
     visibility: 'private',
     locked: true,
     itemCount: 0,
-    shortCode,
     createdAt: Date.now()
   })
   const created = await ctx.db.get(id)
@@ -926,7 +698,8 @@ export const addToList = mutation({
     posterPath: v.optional(v.string())
   },
   handler: async (ctx, { listId, mediaType, tmdbId, title, posterPath }) => {
-    const { list, userId } = await requireWriteAccess(ctx, listId)
+    const list = await requireOwnedList(ctx, listId)
+    const userId = list.userId
     const dupe = await ctx.db
       .query('listItems')
       .withIndex('by_listId_and_media', (q) =>
@@ -1018,7 +791,6 @@ export const ensureLikedForUser = internalMutation({
       .withIndex('by_userId_and_kind', (q) => q.eq('userId', userId).eq('kind', 'liked'))
       .unique()
     if (existing) return
-    const shortCode = await uniqueShortCode(ctx)
     await ctx.db.insert('lists', {
       userId,
       name: 'Favorites',
@@ -1026,7 +798,6 @@ export const ensureLikedForUser = internalMutation({
       visibility: 'private',
       locked: true,
       itemCount: 0,
-      shortCode,
       createdAt: Date.now()
     })
   }
@@ -1040,7 +811,6 @@ export const ensureWatchedForUser = internalMutation({
       .withIndex('by_userId_and_kind', (q) => q.eq('userId', userId).eq('kind', 'watched'))
       .unique()
     if (existing) return
-    const shortCode = await uniqueShortCode(ctx)
     await ctx.db.insert('lists', {
       userId,
       name: 'Watched',
@@ -1048,72 +818,8 @@ export const ensureWatchedForUser = internalMutation({
       visibility: 'private',
       locked: true,
       itemCount: 0,
-      shortCode,
       createdAt: Date.now()
     })
-  }
-})
-
-export const byShortCode = query({
-  args: { shortCode: v.string() },
-  handler: async (ctx, { shortCode }) => {
-    const list = await ctx.db
-      .query('lists')
-      .withIndex('by_shortCode', (q) => q.eq('shortCode', shortCode))
-      .unique()
-    if (!list || list.visibility !== 'public') return null
-    const ownerProfile = await ctx.db
-      .query('profiles')
-      .withIndex('by_userId', (q) => q.eq('userId', list.userId))
-      .unique()
-    const owner = ownerProfile
-      ? {
-          username: ownerProfile.username,
-          displayName: ownerProfile.displayName,
-          avatarUrl: ownerProfile.avatarUrl
-        }
-      : null
-    const recentItems = await ctx.db
-      .query('listItems')
-      .withIndex('by_listId_and_addedAt', (q) => q.eq('listId', list._id))
-      .order('desc')
-      .take(4)
-    const previewPosters = recentItems.map((i) => i.posterPath).filter((p): p is string => !!p)
-    const memberRows = await ctx.db
-      .query('listMembers')
-      .withIndex('by_listId', (q) => q.eq('listId', list._id))
-      .collect()
-    const memberProfiles = await Promise.all(
-      memberRows.map((m) =>
-        ctx.db
-          .query('profiles')
-          .withIndex('by_userId', (q) => q.eq('userId', m.userId))
-          .unique()
-      )
-    )
-    const members = memberProfiles
-      .filter((p): p is Doc<'profiles'> => !!p)
-      .map((p) => ({
-        username: p.username,
-        displayName: p.displayName,
-        avatarUrl: p.avatarUrl
-      }))
-    return { ...list, joinCode: undefined, owner, previewPosters, members }
-  }
-})
-
-export const backfillShortCodes = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const all = await ctx.db.query('lists').collect()
-    let minted = 0
-    for (const list of all) {
-      if (list.shortCode) continue
-      const shortCode = await uniqueShortCode(ctx)
-      await ctx.db.patch(list._id, { shortCode })
-      minted++
-    }
-    return { minted }
   }
 })
 
@@ -1143,7 +849,6 @@ export const backfillWatchedLists = internalMutation({
         .withIndex('by_userId_and_kind', (q) => q.eq('userId', user._id).eq('kind', 'watched'))
         .unique()
       if (existing) continue
-      const shortCode = await uniqueShortCode(ctx)
       await ctx.db.insert('lists', {
         userId: user._id,
         name: 'Watched',
@@ -1151,7 +856,6 @@ export const backfillWatchedLists = internalMutation({
         visibility: 'private',
         locked: true,
         itemCount: 0,
-        shortCode,
         createdAt: Date.now()
       })
       created++
@@ -1160,150 +864,18 @@ export const backfillWatchedLists = internalMutation({
   }
 })
 
-export const invite = mutation({
-  args: { listId: v.id('lists'), friendUserId: v.id('users') },
-  handler: async (ctx, { listId, friendUserId }) => {
-    const list = await requireOwnedList(ctx, listId)
-    if (list.locked) throw new Error('Cannot invite to system list')
-    const ownerId = list.userId
-    if (friendUserId === ownerId) throw new Error('Cannot invite yourself')
-    const friendly = await areFriends(ctx, ownerId, friendUserId)
-    if (!friendly) throw new Error('Must be friends to invite')
-    const existingMember = await getMembership(ctx, listId, friendUserId)
-    if (existingMember) throw new Error('Already a collaborator')
-    const dupeInvite = await ctx.db
-      .query('notifications')
-      .withIndex('by_userId_and_createdAt', (q) => q.eq('userId', friendUserId))
-      .filter((q) => q.and(q.eq(q.field('kind'), 'collab_invite'), q.eq(q.field('listId'), listId)))
-      .first()
-    if (dupeInvite) throw new Error('Invite already sent')
-    await ctx.db.insert('notifications', {
-      userId: friendUserId,
-      kind: 'collab_invite',
-      actorUserId: ownerId,
-      listId,
-      listName: list.name,
-      createdAt: Date.now()
-    })
-  }
-})
-
-export const acceptInvite = mutation({
-  args: { notificationId: v.id('notifications') },
-  handler: async (ctx, { notificationId }) => {
-    const userId = await requireUserId(ctx)
-    const notif = await ctx.db.get(notificationId)
-    if (!notif || notif.userId !== userId) throw new Error('Invite not found')
-    if (notif.kind !== 'collab_invite' || !notif.listId) throw new Error('Not a collab invite')
-    const list = await ctx.db.get(notif.listId)
-    if (!list) {
-      await ctx.db.delete(notificationId)
-      throw new Error('List no longer exists')
+// One-shot cleanup after collaboration/link-sharing removal: unsets the
+// vestigial share codes so the deprecated schema fields can be dropped later.
+export const clearShareCodes = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query('lists').collect()
+    let cleared = 0
+    for (const list of all) {
+      if (list.shortCode === undefined && list.joinCode === undefined) continue
+      await ctx.db.patch(list._id, { shortCode: undefined, joinCode: undefined })
+      cleared++
     }
-    const existing = await getMembership(ctx, list._id, userId)
-    if (!existing) {
-      await ctx.db.insert('listMembers', {
-        listId: list._id,
-        userId,
-        role: 'editor',
-        addedAt: Date.now(),
-        addedBy: list.userId
-      })
-    }
-    await ctx.db.delete(notificationId)
-    await ctx.db.insert('notifications', {
-      userId: list.userId,
-      kind: 'collab_accept',
-      actorUserId: userId,
-      listId: list._id,
-      listName: list.name,
-      createdAt: Date.now()
-    })
-    return list._id
-  }
-})
-
-export const declineInvite = mutation({
-  args: { notificationId: v.id('notifications') },
-  handler: async (ctx, { notificationId }) => {
-    const userId = await requireUserId(ctx)
-    const notif = await ctx.db.get(notificationId)
-    if (!notif || notif.userId !== userId) throw new Error('Invite not found')
-    if (notif.kind !== 'collab_invite') throw new Error('Not a collab invite')
-    await ctx.db.delete(notificationId)
-  }
-})
-
-export const kickMember = mutation({
-  args: { listId: v.id('lists'), memberUserId: v.id('users') },
-  handler: async (ctx, { listId, memberUserId }) => {
-    const list = await requireOwnedList(ctx, listId)
-    if (memberUserId === list.userId) throw new Error('Cannot kick owner')
-    const m = await getMembership(ctx, listId, memberUserId)
-    if (!m) return
-    await ctx.db.delete(m._id)
-  }
-})
-
-export const leaveList = mutation({
-  args: { listId: v.id('lists') },
-  handler: async (ctx, { listId }) => {
-    const userId = await requireUserId(ctx)
-    const list = await ctx.db.get(listId)
-    if (!list) throw new Error('List not found')
-    if (list.userId === userId) throw new Error('Owner cannot leave; delete the list instead')
-    const m = await getMembership(ctx, listId, userId)
-    if (!m) return
-    await ctx.db.delete(m._id)
-  }
-})
-
-export const setJoinLink = mutation({
-  args: { listId: v.id('lists'), enabled: v.boolean() },
-  handler: async (ctx, { listId, enabled }) => {
-    const list = await requireOwnedList(ctx, listId)
-    if (list.locked) throw new Error('Cannot enable join link on system list')
-    if (enabled) {
-      if (list.joinCode) return list.joinCode
-      const joinCode = await uniqueJoinCode(ctx)
-      await ctx.db.patch(listId, { joinCode })
-      return joinCode
-    }
-    if (list.joinCode) await ctx.db.patch(listId, { joinCode: undefined })
-    return null
-  }
-})
-
-export const regenerateJoinLink = mutation({
-  args: { listId: v.id('lists') },
-  handler: async (ctx, { listId }) => {
-    const list = await requireOwnedList(ctx, listId)
-    if (list.locked) throw new Error('Cannot regenerate join link on system list')
-    const joinCode = await uniqueJoinCode(ctx)
-    await ctx.db.patch(listId, { joinCode })
-    return joinCode
-  }
-})
-
-export const joinViaLink = mutation({
-  args: { joinCode: v.string() },
-  handler: async (ctx, { joinCode }) => {
-    const userId = await requireUserId(ctx)
-    const list = await ctx.db
-      .query('lists')
-      .withIndex('by_joinCode', (q) => q.eq('joinCode', joinCode))
-      .unique()
-    if (!list) throw new Error('Invalid join link')
-    if (list.userId === userId) return list._id
-    const existing = await getMembership(ctx, list._id, userId)
-    if (existing) return list._id
-    await ctx.db.insert('listMembers', {
-      listId: list._id,
-      userId,
-      role: 'editor',
-      addedAt: Date.now(),
-      addedBy: list.userId
-    })
-    return list._id
+    return { cleared }
   }
 })

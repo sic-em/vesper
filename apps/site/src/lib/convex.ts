@@ -10,31 +10,8 @@ export const convex = new ConvexHttpClient(url)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const api = anyApi as any
 
-export interface ListShare {
-  _id: string
-  name: string
-  description?: string
-  itemCount: number
-  kind: "liked" | "custom"
-  visibility: "public" | "private"
-  shortCode?: string
-  owner: { username: string; displayName: string; avatarUrl?: string } | null
-  previewPosters: string[]
-}
-
-export async function getListByShortCode(
-  shortCode: string
-): Promise<ListShare | null> {
-  try {
-    return await convex.query(api.lists.byShortCode, { shortCode })
-  } catch {
-    return null
-  }
-}
-
 export interface PublicListPreview {
   name: string
-  shortCode?: string
   kind: "liked" | "custom"
   itemCount: number
   lastItemAddedAt: number

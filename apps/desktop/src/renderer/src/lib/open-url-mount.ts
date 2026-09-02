@@ -5,6 +5,11 @@ let appReady = false
 
 function navigateNow(route: string): void {
   if (!route.startsWith('/')) return
+  // Join links no longer exist (collaboration removed); old links land home.
+  if (route.startsWith('/join/') || /^\/list\/[^/]+\/join\//.test(route)) {
+    void router.navigate({ to: '/', viewTransition: false })
+    return
+  }
   void router.navigate({ to: route, viewTransition: false } as never)
 }
 

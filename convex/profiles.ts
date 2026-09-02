@@ -117,7 +117,6 @@ export const publicProfileByUsername = query({
           .take(4)
         return {
           name: l.name,
-          shortCode: l.shortCode,
           kind: l.kind,
           itemCount: l.itemCount,
           lastItemAddedAt: l.lastItemAddedAt ?? l.createdAt,

@@ -289,7 +289,6 @@ interface PublicListRow {
   itemCount: number
   recentItems: Doc<'listItems'>[]
   coverUrl?: string
-  shortCode?: string
 }
 
 function PublicLists({ lists }: { lists: PublicListRow[] }): React.JSX.Element | null {
