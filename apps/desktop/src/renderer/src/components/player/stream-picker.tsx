@@ -117,7 +117,7 @@ function PickerBody(props: StreamPickerProps): React.JSX.Element {
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 pt-1.5 pb-2">
         <div className="flex items-center justify-between pl-2.5 pr-1">
-          <h2 className="line-clamp-1 text-[15px] leading-4 font-medium tracking-[-0.01em] text-text">
+          <h2 className="min-w-0 truncate text-[15px] leading-4 font-medium tracking-[-0.01em] text-text">
             {title}
           </h2>
           <Dialog.Close className="flex size-7 items-center justify-center rounded-full text-text-muted outline-none transition-colors duration-150 ease-out hover:bg-white/[0.08] hover:text-white">
@@ -212,7 +212,7 @@ function Row({
         <span className="flex h-5 w-14 shrink-0 items-center justify-center rounded-md bg-white/[0.08] text-[11px] leading-3.5 font-medium tracking-[0.02em] text-text">
           {stream.qualityLabel}
         </span>
-        <span className="line-clamp-1 grow text-left text-[13px] leading-4 font-medium text-text">
+        <span className="grow truncate text-left text-[13px] leading-4 font-medium text-text">
           {stream.titleLine || stream.filename || 'Untitled'}
         </span>
       </div>
