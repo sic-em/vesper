@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { IconButton } from '@renderer/components/ui/icon-button'
 import { SearchControl } from '@renderer/components/search/search-popover'
 import { UserMenu } from '@renderer/components/layout/user-menu'
-import { NotificationPopover } from '@renderer/components/notifications/notification-popover'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -121,7 +120,6 @@ export function TopBar({
             <UserGroupIcon className="size-5" />
           </IconButton>
         ) : null}
-        <NotificationPopover />
         <UserMenu />
       </div>
 

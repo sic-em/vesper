@@ -112,37 +112,6 @@ export default defineSchema({
     .index('by_userIdA_and_status', ['userIdA', 'status'])
     .index('by_userIdB_and_status', ['userIdB', 'status']),
 
-  notifications: defineTable({
-    userId: v.id('users'),
-    kind: v.union(
-      v.literal('friend_request'),
-      v.literal('friend_accept'),
-      v.literal('collab_invite'),
-      v.literal('collab_accept'),
-      v.literal('list_removed'),
-      v.literal('new_episode'),
-      v.literal('new_season'),
-      v.literal('stream_ready'),
-      v.literal('stream_failed')
-    ),
-    friendshipId: v.optional(v.id('friendships')),
-    actorUserId: v.optional(v.id('users')),
-    listId: v.optional(v.id('lists')),
-    listName: v.optional(v.string()),
-    tmdbId: v.optional(v.number()),
-    mediaType: v.optional(mediaTypeValidator),
-    season: v.optional(v.number()),
-    episode: v.optional(v.number()),
-    title: v.optional(v.string()),
-    posterPath: v.optional(v.string()),
-    imdbId: v.optional(v.string()),
-    playbackHash: v.optional(v.string()),
-    readAt: v.optional(v.number()),
-    createdAt: v.number()
-  })
-    .index('by_userId_and_createdAt', ['userId', 'createdAt'])
-    .index('by_userId_and_readAt', ['userId', 'readAt']),
-
   playbackProgress: defineTable({
     userId: v.id('users'),
     imdbId: v.string(),

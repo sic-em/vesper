@@ -16,7 +16,6 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
-import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedFriendsRouteImport } from './routes/_authenticated/friends'
 import { Route as AuthenticatedComingSoonRouteImport } from './routes/_authenticated/coming-soon'
 import { Route as AuthenticatedChangelogRouteImport } from './routes/_authenticated/changelog'
@@ -61,12 +60,6 @@ const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedNotificationsRoute =
-  AuthenticatedNotificationsRouteImport.update({
-    id: '/notifications',
-    path: '/notifications',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedFriendsRoute = AuthenticatedFriendsRouteImport.update({
   id: '/friends',
   path: '/friends',
@@ -123,7 +116,6 @@ export interface FileRoutesByFullPath {
   '/changelog': typeof AuthenticatedChangelogRoute
   '/coming-soon': typeof AuthenticatedComingSoonRoute
   '/friends': typeof AuthenticatedFriendsRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/list/$id': typeof AuthenticatedListIdRoute
@@ -140,7 +132,6 @@ export interface FileRoutesByTo {
   '/changelog': typeof AuthenticatedChangelogRoute
   '/coming-soon': typeof AuthenticatedComingSoonRoute
   '/friends': typeof AuthenticatedFriendsRoute
-  '/notifications': typeof AuthenticatedNotificationsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -160,7 +151,6 @@ export interface FileRoutesById {
   '/_authenticated/changelog': typeof AuthenticatedChangelogRoute
   '/_authenticated/coming-soon': typeof AuthenticatedComingSoonRoute
   '/_authenticated/friends': typeof AuthenticatedFriendsRoute
-  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -181,7 +171,6 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/coming-soon'
     | '/friends'
-    | '/notifications'
     | '/search'
     | '/settings'
     | '/list/$id'
@@ -198,7 +187,6 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/coming-soon'
     | '/friends'
-    | '/notifications'
     | '/search'
     | '/settings'
     | '/'
@@ -217,7 +205,6 @@ export interface FileRouteTypes {
     | '/_authenticated/changelog'
     | '/_authenticated/coming-soon'
     | '/_authenticated/friends'
-    | '/_authenticated/notifications'
     | '/_authenticated/search'
     | '/_authenticated/settings'
     | '/_authenticated/'
@@ -285,13 +272,6 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof AuthenticatedSearchRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/notifications': {
-      id: '/_authenticated/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/friends': {
@@ -364,7 +344,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedChangelogRoute: typeof AuthenticatedChangelogRoute
   AuthenticatedComingSoonRoute: typeof AuthenticatedComingSoonRoute
   AuthenticatedFriendsRoute: typeof AuthenticatedFriendsRoute
-  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -380,7 +359,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChangelogRoute: AuthenticatedChangelogRoute,
   AuthenticatedComingSoonRoute: AuthenticatedComingSoonRoute,
   AuthenticatedFriendsRoute: AuthenticatedFriendsRoute,
-  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

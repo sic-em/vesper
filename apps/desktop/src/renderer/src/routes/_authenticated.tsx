@@ -5,7 +5,6 @@ import 'allotment/dist/style.css'
 import { TopBar } from '@renderer/components/layout/top-bar'
 import { LeftSidebar } from '@renderer/components/layout/left-sidebar'
 import { RightSidebar } from '@renderer/components/layout/right-sidebar'
-import { useNotificationSound } from '@renderer/hooks/use-notification-sound'
 import { popularMoviesQuery, trendingTvQuery } from '@renderer/lib/tmdb-queries'
 import { usePersistedState } from '@renderer/hooks/use-persisted-state'
 
@@ -69,7 +68,6 @@ function AuthedLayout(): React.JSX.Element {
   const rafRef = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  useNotificationSound()
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' })

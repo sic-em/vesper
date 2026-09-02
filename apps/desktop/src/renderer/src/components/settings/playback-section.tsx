@@ -16,7 +16,6 @@ import {
   readPipMinimizeEnabled,
   writePipMinimizeEnabled
 } from '@renderer/lib/player-prefs'
-import { readNotifSoundEnabled, writeNotifSoundEnabled } from '@renderer/lib/notification-prefs'
 import { isHevcSupported, isWindows } from '@renderer/lib/platform'
 
 interface LangOption {
@@ -63,7 +62,6 @@ export function PlaybackSection(): React.JSX.Element {
   const [skipButtons, setSkipButtons] = useState(() => readSkipButtonsEnabled())
   const [autoplayNext, setAutoplayNext] = useState(() => readAutoplayNextEnabled())
   const [pipMinimize, setPipMinimize] = useState(() => readPipMinimizeEnabled())
-  const [notifSound, setNotifSound] = useState(() => readNotifSoundEnabled())
 
   const showHevcNotice = isWindows && !isHevcSupported()
 
@@ -139,15 +137,6 @@ export function PlaybackSection(): React.JSX.Element {
         onChange={(v) => {
           setPipMinimize(v)
           writePipMinimizeEnabled(v)
-        }}
-      />
-      <ToggleRow
-        title="Notification sound"
-        description="Play a sound when a new notification arrives."
-        value={notifSound}
-        onChange={(v) => {
-          setNotifSound(v)
-          writeNotifSoundEnabled(v)
         }}
       />
     </div>
