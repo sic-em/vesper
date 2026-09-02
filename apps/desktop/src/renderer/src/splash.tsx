@@ -1,3 +1,4 @@
+import '@fontsource-variable/inter'
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BorderBeam } from 'border-beam'
@@ -110,17 +111,17 @@ function SplashApp(): React.JSX.Element {
             boxSizing: 'border-box',
             color: '#fdfcfc',
             fontFamily:
-              '"Berkeley Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-            fontVariantLigatures: 'none',
+              '"Inter Variable", -apple-system, BlinkMacSystemFont, "SF Pro", "SF Pro Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif',
             minHeight: 164
           }}
         >
           <div
             style={{
-              fontSize: 12,
+              fontSize: 14,
+              fontWeight: 500,
               color: '#9a9898',
-              letterSpacing: '0.02em',
-              minHeight: 18,
+              letterSpacing: '0.01em',
+              minHeight: 20,
               width: '100%',
               display: 'flex',
               alignItems: 'center',
@@ -128,7 +129,11 @@ function SplashApp(): React.JSX.Element {
               textAlign: 'center'
             }}
           >
-            <TextShimmer duration={2.4} style={{ display: 'block' }}>
+            <TextShimmer
+              duration={2.4}
+              baseColor="rgba(253, 252, 252, 0.62)"
+              style={{ display: 'block' }}
+            >
               {statusLabel(phase, version, percent)}
             </TextShimmer>
           </div>
@@ -161,8 +166,17 @@ function SplashApp(): React.JSX.Element {
   )
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <SplashApp />
-  </StrictMode>
-)
+// Mount only once Inter is ready, so the text never paints in the fallback
+// font and then reflows when the woff2 arrives.
+const FONT_WAIT_MS = 500
+
+void Promise.race([
+  document.fonts.load('500 14px "Inter Variable"').catch(() => undefined),
+  new Promise((resolve) => setTimeout(resolve, FONT_WAIT_MS))
+]).then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <SplashApp />
+    </StrictMode>
+  )
+})
