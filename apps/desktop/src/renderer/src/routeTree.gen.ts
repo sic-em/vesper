@@ -25,7 +25,6 @@ import { Route as AuthenticatedTvIdRouteImport } from './routes/_authenticated/t
 import { Route as AuthenticatedPersonIdRouteImport } from './routes/_authenticated/person.$id'
 import { Route as AuthenticatedMovieIdRouteImport } from './routes/_authenticated/movie.$id'
 import { Route as AuthenticatedListIdRouteImport } from './routes/_authenticated/list.$id'
-import { Route as AuthenticatedJoinJoinCodeRouteImport } from './routes/_authenticated/join.$joinCode'
 import { Route as AuthenticatedWatchMediaTypeIdRouteImport } from './routes/_authenticated/watch.$mediaType.$id'
 
 const SignupRoute = SignupRouteImport.update({
@@ -109,12 +108,6 @@ const AuthenticatedListIdRoute = AuthenticatedListIdRouteImport.update({
   path: '/list/$id',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedJoinJoinCodeRoute =
-  AuthenticatedJoinJoinCodeRouteImport.update({
-    id: '/join/$joinCode',
-    path: '/join/$joinCode',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedWatchMediaTypeIdRoute =
   AuthenticatedWatchMediaTypeIdRouteImport.update({
     id: '/watch/$mediaType/$id',
@@ -133,7 +126,6 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
-  '/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/list/$id': typeof AuthenticatedListIdRoute
   '/movie/$id': typeof AuthenticatedMovieIdRoute
   '/person/$id': typeof AuthenticatedPersonIdRoute
@@ -152,7 +144,6 @@ export interface FileRoutesByTo {
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/': typeof AuthenticatedIndexRoute
-  '/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/list/$id': typeof AuthenticatedListIdRoute
   '/movie/$id': typeof AuthenticatedMovieIdRoute
   '/person/$id': typeof AuthenticatedPersonIdRoute
@@ -173,7 +164,6 @@ export interface FileRoutesById {
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/join/$joinCode': typeof AuthenticatedJoinJoinCodeRoute
   '/_authenticated/list/$id': typeof AuthenticatedListIdRoute
   '/_authenticated/movie/$id': typeof AuthenticatedMovieIdRoute
   '/_authenticated/person/$id': typeof AuthenticatedPersonIdRoute
@@ -194,7 +184,6 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/search'
     | '/settings'
-    | '/join/$joinCode'
     | '/list/$id'
     | '/movie/$id'
     | '/person/$id'
@@ -213,7 +202,6 @@ export interface FileRouteTypes {
     | '/search'
     | '/settings'
     | '/'
-    | '/join/$joinCode'
     | '/list/$id'
     | '/movie/$id'
     | '/person/$id'
@@ -233,7 +221,6 @@ export interface FileRouteTypes {
     | '/_authenticated/search'
     | '/_authenticated/settings'
     | '/_authenticated/'
-    | '/_authenticated/join/$joinCode'
     | '/_authenticated/list/$id'
     | '/_authenticated/movie/$id'
     | '/_authenticated/person/$id'
@@ -363,13 +350,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedListIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/join/$joinCode': {
-      id: '/_authenticated/join/$joinCode'
-      path: '/join/$joinCode'
-      fullPath: '/join/$joinCode'
-      preLoaderRoute: typeof AuthenticatedJoinJoinCodeRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/watch/$mediaType/$id': {
       id: '/_authenticated/watch/$mediaType/$id'
       path: '/watch/$mediaType/$id'
@@ -388,7 +368,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedJoinJoinCodeRoute: typeof AuthenticatedJoinJoinCodeRoute
   AuthenticatedListIdRoute: typeof AuthenticatedListIdRoute
   AuthenticatedMovieIdRoute: typeof AuthenticatedMovieIdRoute
   AuthenticatedPersonIdRoute: typeof AuthenticatedPersonIdRoute
@@ -405,7 +384,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedJoinJoinCodeRoute: AuthenticatedJoinJoinCodeRoute,
   AuthenticatedListIdRoute: AuthenticatedListIdRoute,
   AuthenticatedMovieIdRoute: AuthenticatedMovieIdRoute,
   AuthenticatedPersonIdRoute: AuthenticatedPersonIdRoute,

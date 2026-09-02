@@ -8,20 +8,16 @@ import {
   EditGlyph,
   InfoGlyph,
   PinGlyph,
-  ShareGlyph,
-  SignOutGlyph,
   TrashGlyph
 } from '@renderer/components/ui/context-menu'
 import { ListFormModal } from '@renderer/components/library/list-form-modal'
-import { shareUrlForList } from '@renderer/lib/share-url'
 import { api } from '@convex/_generated/api'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 
 interface ListContextMenuProps {
-  list: Doc<'lists'> & { viewerRole?: 'owner' | 'editor' | 'viewer'; pinned?: boolean }
+  list: Doc<'lists'> & { pinned?: boolean }
   onOpen?: () => void
   onDelete?: () => void
-  onLeave?: () => void
   asPopover?: { open: boolean; onOpenChange: (v: boolean) => void; trigger: React.ReactNode }
   children?: React.ReactNode
 }
@@ -30,18 +26,13 @@ export function ListContextMenu({
   list,
   onOpen,
   onDelete,
-  onLeave,
   asPopover,
   children
 }: ListContextMenuProps): React.JSX.Element {
   const [editOpen, setEditOpen] = useState(false)
   const deleteList = useMutation(api.lists.deleteList)
-  const leaveList = useMutation(api.lists.leaveList)
   const pinList = useMutation(api.lists.pinList)
   const unpinList = useMutation(api.lists.unpinList)
-  const role = list.viewerRole ?? 'owner'
-  const isOwner = role === 'owner'
-  const isEditor = role === 'editor'
   const canPin = list.kind === 'custom'
   const pinned = !!list.pinned
 
@@ -55,16 +46,6 @@ export function ListContextMenu({
     void deleteList({ listId: list._id as Id<'lists'> })
   }
 
-  const handleLeave = (): void => {
-    onLeave?.()
-    void leaveList({ listId: list._id as Id<'lists'> })
-  }
-
-  const share = (): void => {
-    if (!list.shortCode) return
-    void navigator.clipboard?.writeText(shareUrlForList(list.shortCode)).catch(() => {})
-  }
-
   const items = (
     <>
       {onOpen ? <ContextMenuItem icon={<InfoGlyph />} label="Open" onClick={onOpen} /> : null}
@@ -75,25 +56,11 @@ export function ListContextMenu({
           onClick={togglePin}
         />
       ) : null}
-      {isOwner && !list.locked ? (
-        <ContextMenuItem icon={<EditGlyph />} label="Edit" onClick={() => setEditOpen(true)} />
-      ) : null}
-      <ContextMenuItem icon={<ShareGlyph />} label="Share" onClick={share} />
-      {isOwner && !list.locked ? (
+      {!list.locked ? (
         <>
+          <ContextMenuItem icon={<EditGlyph />} label="Edit" onClick={() => setEditOpen(true)} />
           <ContextMenuSeparator />
           <ContextMenuItem icon={<TrashGlyph />} label="Delete" onClick={handleDelete} danger />
-        </>
-      ) : null}
-      {isEditor ? (
-        <>
-          <ContextMenuSeparator />
-          <ContextMenuItem
-            icon={<SignOutGlyph />}
-            label="Leave list"
-            onClick={handleLeave}
-            danger
-          />
         </>
       ) : null}
     </>
@@ -112,7 +79,7 @@ export function ListContextMenu({
       ) : (
         <ContextMenuRoot trigger={children}>{items}</ContextMenuRoot>
       )}
-      {isOwner && !list.locked ? (
+      {!list.locked ? (
         <ListFormModal mode="edit" list={list} open={editOpen} onOpenChange={setEditOpen} />
       ) : null}
     </>

@@ -1,5 +1,4 @@
 import { ListCover, type ListKind } from '@renderer/components/library/list-cover'
-import { Avatar } from '@renderer/components/ui/avatar'
 import { PinSolidIcon } from '@renderer/components/icons'
 import { cn } from '@renderer/lib/cn'
 
@@ -11,7 +10,6 @@ export interface LibraryListItemProps {
   seed?: string
   active?: boolean
   compact?: boolean
-  ownerAvatarUrl?: string
   coverUrl?: string
   pinned?: boolean
 }
@@ -24,7 +22,6 @@ export function LibraryListItem({
   seed,
   active = false,
   compact = false,
-  ownerAvatarUrl,
   coverUrl,
   pinned = false
 }: LibraryListItemProps): React.JSX.Element {
@@ -38,15 +35,6 @@ export function LibraryListItem({
         name={name}
         coverUrl={coverUrl}
       />
-      {ownerAvatarUrl ? (
-        <Avatar
-          size="xs"
-          src={ownerAvatarUrl}
-          seed={name}
-          alt=""
-          className="absolute -right-1 -bottom-1 size-4 border-2 border-surface"
-        />
-      ) : null}
     </div>
   )
 

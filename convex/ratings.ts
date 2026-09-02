@@ -11,29 +11,6 @@ import {
 } from './_generated/server'
 import { mediaTypeValidator } from './schema'
 
-const SHORTCODE_ALPHABET = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-const SHORTCODE_LEN = 6
-
-function randomShortCode(): string {
-  let out = ''
-  for (let i = 0; i < SHORTCODE_LEN; i++) {
-    out += SHORTCODE_ALPHABET[Math.floor(Math.random() * SHORTCODE_ALPHABET.length)]
-  }
-  return out
-}
-
-async function uniqueShortCode(ctx: MutationCtx): Promise<string> {
-  for (let i = 0; i < 6; i++) {
-    const code = randomShortCode()
-    const collision = await ctx.db
-      .query('lists')
-      .withIndex('by_shortCode', (q) => q.eq('shortCode', code))
-      .unique()
-    if (!collision) return code
-  }
-  throw new Error('Failed to mint unique shortCode')
-}
-
 async function getOrCreateWatchedList(
   ctx: MutationCtx,
   userId: Id<'users'>
@@ -43,7 +20,6 @@ async function getOrCreateWatchedList(
     .withIndex('by_userId_and_kind', (q) => q.eq('userId', userId).eq('kind', 'watched'))
     .unique()
   if (existing) return existing
-  const shortCode = await uniqueShortCode(ctx)
   const id = await ctx.db.insert('lists', {
     userId,
     name: 'Watched',
@@ -51,7 +27,6 @@ async function getOrCreateWatchedList(
     visibility: 'private',
     locked: true,
     itemCount: 0,
-    shortCode,
     createdAt: Date.now()
   })
   const created = await ctx.db.get(id)

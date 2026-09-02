@@ -13,7 +13,6 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { MediaContextMenu } from '@renderer/components/library/media-context-menu'
-import { Avatar } from '@renderer/components/ui/avatar'
 import { tmdbImage } from '@renderer/lib/tmdb'
 import { movieDetailsQuery, tvDetailsQuery } from '@renderer/lib/tmdb-queries'
 import { StarSolidIcon } from '@renderer/components/icons'
@@ -24,11 +23,7 @@ import { cn } from '@renderer/lib/cn'
 const ROW_HEIGHT = 60
 const SORT_STORAGE_PREFIX = 'vesper:list-sort:'
 
-interface ListItemRow extends Doc<'listItems'> {
-  addedByAvatar?: string
-  addedByName?: string
-  addedByUsername?: string
-}
+type ListItemRow = Doc<'listItems'>
 
 interface EnrichedRow {
   item: ListItemRow
@@ -100,9 +95,7 @@ export function ItemsTable({
   items,
   status,
   loadMore,
-  viewerUserId,
-  viewerRole,
-  hasMembers,
+  canRemove,
   showRating,
   ratingsMap
 }: {
@@ -110,9 +103,7 @@ export function ItemsTable({
   items: ListItemRow[]
   status: ReturnType<typeof usePaginatedQuery>['status']
   loadMore: (n: number) => void
-  viewerUserId?: Id<'users'>
-  viewerRole: 'owner' | 'editor' | 'viewer'
-  hasMembers: boolean
+  canRemove: boolean
   showRating: boolean
   ratingsMap?: Map<string, number>
 }): React.JSX.Element {
@@ -285,29 +276,6 @@ export function ItemsTable({
         enableSorting: true
       })
     ]
-    if (hasMembers) {
-      cols.push(
-        columnHelper.display({
-          id: 'addedBy',
-          header: 'By',
-          cell: ({ row }) => {
-            const it = row.original.item
-            return (
-              <Avatar
-                size="xs"
-                src={it.addedByAvatar}
-                seed={it.addedByUsername ?? it.addedBy}
-                alt={it.addedByName}
-                title={it.addedByName ? `Added by ${it.addedByName}` : undefined}
-                className="size-5"
-              />
-            )
-          },
-          size: 36,
-          enableSorting: false
-        })
-      )
-    }
     if (showRating) {
       cols.push(
         columnHelper.accessor((r) => r.rating ?? 0, {
@@ -333,7 +301,7 @@ export function ItemsTable({
       )
     }
     return cols
-  }, [hasMembers, showRating])
+  }, [showRating])
 
   const table = useReactTable({
     data,
@@ -359,9 +327,6 @@ export function ItemsTable({
       viewTransition: false
     })
   }
-
-  const canRemove = (item: ListItemRow): boolean =>
-    viewerRole === 'owner' || (viewerRole === 'editor' && item.addedBy === viewerUserId)
 
   const totalSize = rowVirtualizer.getTotalSize()
   const virtualRows = rowVirtualizer.getVirtualItems()
@@ -409,9 +374,7 @@ export function ItemsTable({
               title={it.title}
               posterPath={it.posterPath}
               onRemove={
-                canRemove(it)
-                  ? () => void removeFromList({ listId, listItemId: it._id })
-                  : undefined
+                canRemove ? () => void removeFromList({ listId, listItemId: it._id }) : undefined
               }
             >
               <div

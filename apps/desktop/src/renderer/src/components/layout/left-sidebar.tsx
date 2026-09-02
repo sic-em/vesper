@@ -202,7 +202,6 @@ export function LeftSidebar({ onCollapse }: { onCollapse: () => void }): React.J
             active={active}
             coverUrl={list.coverUrl}
             pinned={list.pinned}
-            ownerAvatarUrl={list.viewerRole === 'editor' ? list.owner?.avatarUrl : undefined}
           />
         </Link>
       </ListContextMenu>

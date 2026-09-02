@@ -81,10 +81,7 @@ export function NotificationRow(props: NotificationRowProps): React.JSX.Element 
   const markRead = useMutation(api.notifications.markRead)
   const acceptFriend = useMutation(api.friendships.acceptRequest)
   const declineFriend = useMutation(api.friendships.declineRequest)
-  const acceptCollab = useMutation(api.lists.acceptInvite)
-  const declineCollab = useMutation(api.lists.declineInvite)
   const friendActionable = props.kind === 'friend_request' && !!props.friendshipId
-  const collabActionable = props.kind === 'collab_invite'
 
   const handleClick = (): void => {
     if (!props.readAt) void markRead({ notificationId: props.notificationId })
@@ -95,10 +92,6 @@ export function NotificationRow(props: NotificationRowProps): React.JSX.Element 
     e.stopPropagation()
     if (props.kind === 'friend_request' && props.friendshipId) {
       await acceptFriend({ friendshipId: props.friendshipId })
-      return
-    }
-    if (props.kind === 'collab_invite') {
-      await acceptCollab({ notificationId: props.notificationId })
     }
   }
 
@@ -106,10 +99,6 @@ export function NotificationRow(props: NotificationRowProps): React.JSX.Element 
     e.stopPropagation()
     if (props.kind === 'friend_request' && props.friendshipId) {
       await declineFriend({ friendshipId: props.friendshipId })
-      return
-    }
-    if (props.kind === 'collab_invite') {
-      await declineCollab({ notificationId: props.notificationId })
     }
   }
 
@@ -134,7 +123,7 @@ export function NotificationRow(props: NotificationRowProps): React.JSX.Element 
           <span className="mt-1.5 size-2 shrink-0 rounded-full bg-[#FF5F57]" aria-label="Unread" />
         ) : null}
       </div>
-      {friendActionable || collabActionable ? (
+      {friendActionable ? (
         <div className="flex gap-2 pl-[46px]">
           <button
             type="button"

@@ -15,7 +15,3 @@ export function shareUrlForEpisode(tmdbId: number, season: number, episode: numb
 export function shareUrlForUser(username: string): string {
   return `${WEB_HOST}/user/${encodeURIComponent(username)}`
 }
-
-export function shareUrlForList(shortCode: string): string {
-  return `${WEB_HOST}/list/${shortCode}`
-}

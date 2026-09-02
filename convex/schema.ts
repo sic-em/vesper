@@ -48,26 +48,15 @@ export default defineSchema({
     coverKey: v.optional(v.string()),
     locked: v.boolean(),
     itemCount: v.number(),
+    // Deprecated (link sharing removed); kept until clearShareCodes has run
+    // in production, then both fields can be dropped.
     shortCode: v.optional(v.string()),
     joinCode: v.optional(v.string()),
     lastItemAddedAt: v.optional(v.number()),
     createdAt: v.number()
   })
     .index('by_userId', ['userId'])
-    .index('by_userId_and_kind', ['userId', 'kind'])
-    .index('by_shortCode', ['shortCode'])
-    .index('by_joinCode', ['joinCode']),
-
-  listMembers: defineTable({
-    listId: v.id('lists'),
-    userId: v.id('users'),
-    role: v.literal('editor'),
-    addedAt: v.number(),
-    addedBy: v.id('users')
-  })
-    .index('by_listId', ['listId'])
-    .index('by_userId', ['userId'])
-    .index('by_listId_and_userId', ['listId', 'userId']),
+    .index('by_userId_and_kind', ['userId', 'kind']),
 
   listPins: defineTable({
     userId: v.id('users'),
