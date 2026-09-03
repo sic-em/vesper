@@ -15,9 +15,15 @@ interface PosterRowProps {
   title: string
   items: PosterRowItem[]
   max?: number
+  contextMenu?: boolean
 }
 
-export function PosterRow({ title, items, max = 12 }: PosterRowProps): React.JSX.Element {
+export function PosterRow({
+  title,
+  items,
+  max = 12,
+  contextMenu = true
+}: PosterRowProps): React.JSX.Element {
   const navigate = useNavigate()
   const open = (item: PosterRowItem): void => {
     if (item.type === 'movie') {
@@ -44,7 +50,7 @@ export function PosterRow({ title, items, max = 12 }: PosterRowProps): React.JSX
             }
           />
         )
-        if (!item.type) return <div key={item.id}>{card}</div>
+        if (!item.type || !contextMenu) return <div key={item.id}>{card}</div>
         return (
           <MediaContextMenu
             key={item.id}

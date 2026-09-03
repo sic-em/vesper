@@ -1,14 +1,15 @@
-import { memo, useMemo, useRef } from 'react'
+import { memo, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useInfiniteQuery } from '@tanstack/react-query'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Segmented } from '@renderer/components/ui/segmented'
 import { Select } from '@renderer/components/ui/select'
 import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
 import { LoadMore } from '@renderer/components/ui/load-more'
-import { MediaContextMenu } from '@renderer/components/library/media-context-menu'
 import { genreIcon } from '@renderer/components/explore-icons'
 import { usePreloadRoute } from '@renderer/lib/use-preload-route'
+import { useScrollContainer } from '@renderer/lib/scroll-container'
 import {
   discoverInfiniteQuery,
   EXPLORE_MOVIE_GENRES,
@@ -150,17 +151,7 @@ function ExplorePage(): React.JSX.Element {
           />
         ) : (
           <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
-              {items.map((item) => (
-                <ExploreCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  posterPath={item.posterPath}
-                  type={type}
-                />
-              ))}
-            </div>
+            <VirtualGrid items={items} type={type} />
             {items.length > 0 ? (
               <LoadMore
                 hasMore={query.hasNextPage}
@@ -172,6 +163,98 @@ function ExplorePage(): React.JSX.Element {
           </div>
         )}
       </SkeletonSwap>
+    </div>
+  )
+}
+
+// Mirrors the skeleton's auto-fill grid: as many 140px-minimum columns as fit, 16px gaps.
+const CARD_MIN_WIDTH = 140
+const GRID_GAP = 16
+const POSTER_RATIO = 3 / 2
+
+// Renders only the on-screen rows. The full result set lives in the react-query cache
+// (hundreds of items after a few load-mores), and mounting every card at once is what
+// made entering and scrolling this page hitch.
+function VirtualGrid({
+  items,
+  type
+}: {
+  items: ExploreItem[]
+  type: ExploreType
+}): React.JSX.Element {
+  const scrollRef = useScrollContainer()
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  const [scrollMargin, setScrollMargin] = useState(0)
+
+  useLayoutEffect(() => {
+    const el = wrapRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const update = (): void => setWidth(el.clientWidth)
+    update()
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Offset of the grid inside the scroll pane (header, page padding) so virtual row
+  // positions line up with the pane's scrollTop.
+  useLayoutEffect(() => {
+    const el = wrapRef.current
+    const scroller = scrollRef?.current
+    if (!el || !scroller) return
+    setScrollMargin(
+      el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
+    )
+  }, [scrollRef, width])
+
+  const cols =
+    width > 0 ? Math.max(1, Math.floor((width + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP))) : 1
+  const cardWidth = width > 0 ? (width - (cols - 1) * GRID_GAP) / cols : CARD_MIN_WIDTH
+  const rowHeight = cardWidth * POSTER_RATIO + GRID_GAP
+  const rowCount = Math.ceil(items.length / cols)
+
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => scrollRef?.current ?? null,
+    estimateSize: () => rowHeight,
+    overscan: 3,
+    scrollMargin
+  })
+
+  useLayoutEffect(() => {
+    virtualizer.measure()
+  }, [virtualizer, rowHeight])
+
+  return (
+    <div
+      ref={wrapRef}
+      // The last row's built-in gap stands in for the column gap above LoadMore.
+      style={{ height: Math.max(0, virtualizer.getTotalSize() - GRID_GAP) }}
+      className="relative"
+    >
+      {width > 0
+        ? virtualizer.getVirtualItems().map((row) => (
+            <div
+              key={row.key}
+              className="absolute inset-x-0 top-0 grid gap-4"
+              style={{
+                transform: `translateY(${row.start - scrollMargin}px)`,
+                gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`
+              }}
+            >
+              {items.slice(row.index * cols, row.index * cols + cols).map((item) => (
+                <ExploreCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  posterPath={item.posterPath}
+                  type={type}
+                />
+              ))}
+            </div>
+          ))
+        : null}
     </div>
   )
 }
@@ -195,23 +278,21 @@ const ExploreCard = memo(function ExploreCard({
   }
   usePreloadRoute(ref, target, { viewport: false })
   return (
-    <MediaContextMenu mediaType={type} tmdbId={id} title={title} posterPath={posterPath}>
-      <BaseButton
-        ref={ref}
-        onClick={() => navigate({ ...target, viewTransition: false })}
-        className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-2 outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-        aria-label={title}
-      >
-        <img
-          src={tmdbImage(posterPath, 'w342')}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          className="absolute inset-0 size-full object-cover"
-        />
-      </BaseButton>
-    </MediaContextMenu>
+    <BaseButton
+      ref={ref}
+      onClick={() => navigate({ ...target, viewTransition: false })}
+      className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-2 outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+      aria-label={title}
+    >
+      <img
+        src={tmdbImage(posterPath, 'w342')}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        className="absolute inset-0 size-full object-cover"
+      />
+    </BaseButton>
   )
 })
 
