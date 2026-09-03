@@ -1,5 +1,5 @@
 import { scrapeAndRace } from './stream-orchestrator'
-import type { TmdbEpisode, TmdbSeasonSummary } from './tmdb'
+import type { TmdbSeasonSummary } from './tmdb'
 
 export interface EpisodeCursor {
   season: number
@@ -38,17 +38,6 @@ export function previousEpisodeCursor(args: {
   return earlier ? { season: earlier.season_number, episode: earlier.episode_count } : null
 }
 
-/**
- * TMDB lists episodes before they air, and offering to play one is offering a stream that cannot
- * exist. An unknown air date is left playable — the scrape decides.
- */
-export function hasAired(ep: TmdbEpisode | null | undefined): boolean {
-  if (!ep) return false
-  if (!ep.air_date) return true
-  const airedAt = Date.parse(`${ep.air_date}T00:00:00Z`)
-  return !Number.isFinite(airedAt) || airedAt <= Date.now()
-}
-
 /** Search params for the watch route, as an episode launch fills them in. */
 export interface EpisodeWatchSearch {
   url: string
@@ -62,15 +51,14 @@ export interface EpisodeWatchSearch {
   bingeGroup?: string
 }
 
-export function formatEpisodeLabel(season: number, episode: number, name?: string | null): string {
+function formatEpisodeLabel(season: number, episode: number, name?: string | null): string {
   const base = `S${season}E${episode}`
   return name ? `${base} · ${name}` : base
 }
 
 /**
- * Resolve a playable stream for an episode and shape it into watch-route search params. Next,
- * previous, and autoplay all go through here so they inherit binge-group continuity and dead-link
- * fallback.
+ * Resolve a playable stream for an episode and shape it into watch-route search params. Next and
+ * previous both go through here so they inherit binge-group continuity and dead-link fallback.
  */
 export async function resolveEpisodeWatch(args: {
   tvTmdbId: number

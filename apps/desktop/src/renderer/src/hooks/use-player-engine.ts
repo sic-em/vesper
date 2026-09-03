@@ -62,8 +62,8 @@ export function usePlayerEngine(args: {
 
     // Every reading below belongs to the stream being replaced, and the new controller will not
     // correct them until it has loaded — seconds of network away. Anything reading position or
-    // duration in between (progress saving, completion, autoplay) would be answering about the
-    // stream the viewer just left.
+    // duration in between (progress saving, completion) would be answering about the stream the
+    // viewer just left.
     setError(null)
     setEnded(false)
     setLoadedUrl(null)
