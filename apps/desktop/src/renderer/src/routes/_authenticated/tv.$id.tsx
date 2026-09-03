@@ -123,11 +123,7 @@ function TvPage(): React.JSX.Element {
 
   const fanartLogo = pickFanartLogo(fanart.data?.hdtvlogo ?? fanart.data?.clearlogo ?? undefined)
   const trailers = pickPlayableVideos(details.data.videos?.results ?? [])
-  const topTrailer = trailers.find((v) => v.type === 'Trailer') ?? trailers[0]
-  const heroProps = {
-    ...tvDetailsToHero(details.data, fanartLogo, ratings.data ?? null),
-    trailerKey: topTrailer?.key
-  }
+  const heroProps = tvDetailsToHero(details.data, fanartLogo, ratings.data ?? null)
   const cast = details.data.credits?.cast.slice(0, 12) ?? []
   const recs: PosterRowItem[] =
     details.data.recommendations?.results.map((s) => ({

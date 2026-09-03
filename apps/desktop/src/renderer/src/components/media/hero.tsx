@@ -1,15 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@renderer/components/ui/button'
 import { IconButton } from '@renderer/components/ui/icon-button'
 import { Badge } from '@renderer/components/ui/badge'
-import {
-  FullscreenIcon,
-  PlayIcon,
-  PlusIcon,
-  VolumeOffIcon,
-  VolumeOnIcon
-} from '@renderer/components/icons'
-import { VideoModal } from '@renderer/components/media/video-modal'
+import { PlayIcon, PlusIcon } from '@renderer/components/icons'
 import { OverviewModal } from '@renderer/components/media/overview-modal'
 import { ImdbLogo } from '@renderer/components/brand/imdb-logo'
 import { RtLogo } from '@renderer/components/brand/rt-logo'
@@ -17,10 +10,6 @@ import { MetacriticLogo } from '@renderer/components/brand/metacritic-logo'
 import { AddToListsPopover } from '@renderer/components/library/add-to-lists-popover'
 import { RatingButton } from '@renderer/components/media/rating-button'
 import { cn } from '@renderer/lib/cn'
-
-const TRAILER_DELAY_MS = 5000
-const FADE_MS = 500
-const YT_ORIGIN = 'https://www.youtube-nocookie.com'
 
 export interface HeroProps {
   title: string
@@ -41,7 +30,6 @@ export interface HeroProps {
   mediaType: 'movie' | 'tv'
   tmdbId: number
   posterPath?: string
-  trailerKey?: string
   onPlay?: () => void
   playBusy?: boolean
   resume?: { label: string; percent: number } | null
@@ -66,7 +54,6 @@ export function Hero({
   mediaType,
   tmdbId,
   posterPath,
-  trailerKey,
   onPlay,
   playBusy,
   resume
@@ -98,7 +85,6 @@ export function Hero({
           WebkitMaskImage: 'linear-gradient(black 65%, transparent 95%)'
         }}
       />
-      {trailerKey ? <HeroTrailer ytKey={trailerKey} /> : null}
       <div
         className="absolute inset-0"
         style={{
@@ -227,133 +213,5 @@ export function Hero({
         onOpenChange={setOverviewOpen}
       />
     </section>
-  )
-}
-
-type TrailerPhase = 'idle' | 'visible' | 'gone'
-
-function HeroTrailer({ ytKey }: { ytKey: string }): React.JSX.Element | null {
-  const [phase, setPhase] = useState<TrailerPhase>('idle')
-  const [muted, setMuted] = useState(true)
-  const [fullscreen, setFullscreen] = useState(false)
-  const iframeRef = useRef<HTMLIFrameElement | null>(null)
-
-  useEffect(() => {
-    setPhase('idle')
-    setMuted(true)
-    const id = window.setTimeout(() => setPhase('visible'), TRAILER_DELAY_MS)
-    return () => window.clearTimeout(id)
-  }, [ytKey])
-
-  useEffect(() => {
-    if (phase !== 'visible') return
-    const onMsg = (e: MessageEvent): void => {
-      if (e.origin !== YT_ORIGIN) return
-      try {
-        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data
-        if (data?.event === 'onStateChange' && data.info === 0) {
-          window.setTimeout(() => setPhase('gone'), FADE_MS)
-        }
-      } catch {
-        /* noop */
-      }
-    }
-    window.addEventListener('message', onMsg)
-    return () => window.removeEventListener('message', onMsg)
-  }, [phase])
-
-  useEffect(() => {
-    if (phase !== 'visible') return
-    const iframe = iframeRef.current
-    if (!iframe?.contentWindow) return
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: 'command', func: muted ? 'mute' : 'unMute', args: [] }),
-      YT_ORIGIN
-    )
-  }, [muted, phase])
-
-  const openFullscreen = (): void => {
-    setPhase('gone')
-    setFullscreen(true)
-  }
-
-  if (phase === 'gone') {
-    return (
-      <VideoModal
-        ytKey={fullscreen ? ytKey : null}
-        title="Trailer"
-        open={fullscreen}
-        onOpenChange={setFullscreen}
-      />
-    )
-  }
-
-  const src = `${YT_ORIGIN}/embed/${ytKey}?autoplay=1&mute=1&controls=0&loop=0&rel=0&playsinline=1&modestbranding=1&enablejsapi=1&disablekb=1&iv_load_policy=3`
-
-  const onLoad = (): void => {
-    const iframe = iframeRef.current
-    if (!iframe?.contentWindow) return
-    iframe.contentWindow.postMessage(
-      JSON.stringify({ event: 'listening', id: 'vesper-trailer', channel: 'widget' }),
-      YT_ORIGIN
-    )
-  }
-
-  return (
-    <>
-      <div
-        className={cn(
-          'absolute inset-0 overflow-hidden transition-opacity',
-          phase === 'visible' ? 'opacity-100' : 'opacity-0'
-        )}
-        style={{
-          transitionDuration: `${FADE_MS}ms`,
-          maskImage: 'linear-gradient(black 65%, transparent 95%)',
-          WebkitMaskImage: 'linear-gradient(black 65%, transparent 95%)'
-        }}
-      >
-        {phase === 'visible' ? (
-          <iframe
-            ref={iframeRef}
-            src={src}
-            title="Trailer"
-            allow="autoplay; encrypted-media"
-            onLoad={onLoad}
-            className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{ width: '200%', height: '200%', border: 0 }}
-          />
-        ) : null}
-      </div>
-      <div
-        className={cn(
-          'absolute top-4 right-4 z-20 flex items-center gap-2 transition-opacity',
-          phase === 'visible' ? 'opacity-100' : 'pointer-events-none opacity-0'
-        )}
-        style={{ transitionDuration: `${FADE_MS}ms` }}
-      >
-        <IconButton
-          variant="glass"
-          size="md"
-          aria-label={muted ? 'Unmute trailer' : 'Mute trailer'}
-          onClick={() => setMuted((m) => !m)}
-        >
-          {muted ? <VolumeOffIcon className="size-4" /> : <VolumeOnIcon className="size-4" />}
-        </IconButton>
-        <IconButton
-          variant="glass"
-          size="md"
-          aria-label="Open trailer fullscreen"
-          onClick={openFullscreen}
-        >
-          <FullscreenIcon className="size-4" />
-        </IconButton>
-      </div>
-      <VideoModal
-        ytKey={fullscreen ? ytKey : null}
-        title="Trailer"
-        open={fullscreen}
-        onOpenChange={setFullscreen}
-      />
-    </>
   )
 }
