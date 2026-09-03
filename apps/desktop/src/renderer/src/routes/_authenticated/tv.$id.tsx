@@ -107,7 +107,9 @@ export const Route = createFileRoute('/_authenticated/tv/$id')({
     const details = await qc.ensureQueryData(tvDetailsQuery(id))
     preloadImage(tmdbImage(details.backdrop_path, 'original'))
     preloadImage(tmdbImage(details.poster_path, 'original'))
-    await prefetchHeroExtras(qc, details)
+    // Ratings and fanart render into the hero as they arrive (non-suspense queries), so
+    // don't hold the navigation on them — fanart.tv alone can take over a second.
+    void prefetchHeroExtras(qc, details)
   },
   component: TvPage
 })

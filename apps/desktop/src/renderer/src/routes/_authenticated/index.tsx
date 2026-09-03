@@ -1,7 +1,9 @@
+import { useEffect, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQuery as useConvexQuery } from 'convex/react'
+import { useScrollContainer } from '@renderer/lib/scroll-container'
 import { ContinueCard } from '@renderer/components/media/continue-card'
 import { PosterRow, type PosterRowItem } from '@renderer/components/media/poster-row'
 import { FeaturedCarousel } from '@renderer/components/media/featured-carousel'
@@ -145,24 +147,100 @@ function HomePage(): React.JSX.Element {
 
       <ContinueWatchingSection />
 
-      <PosterRow
-        title="Trending Now"
-        items={trendingAll.data.results.map(trendingToPoster)}
-        max={20}
-      />
-      <PosterRow title="Top 10 Movies" items={topMovies.data.results.map(movieToPoster)} max={10} />
-      <PosterRow title="Top 10 Series" items={topTv.data.results.map(showToPoster)} max={10} />
+      <DeferredPosterRow>
+        <PosterRow
+          title="Trending Now"
+          items={trendingAll.data.results.map(trendingToPoster)}
+          max={20}
+          contextMenu={false}
+        />
+      </DeferredPosterRow>
+      <DeferredPosterRow>
+        <PosterRow
+          title="Top 10 Movies"
+          items={topMovies.data.results.map(movieToPoster)}
+          max={10}
+          contextMenu={false}
+        />
+      </DeferredPosterRow>
+      <DeferredPosterRow>
+        <PosterRow
+          title="Top 10 Series"
+          items={topTv.data.results.map(showToPoster)}
+          max={10}
+          contextMenu={false}
+        />
+      </DeferredPosterRow>
 
       {GENRE_ROWS.map((g) => (
-        <GenreRow key={g.key} genre={g.key} title={g.title} />
+        <DeferredPosterRow key={g.key}>
+          <GenreRow genre={g.key} title={g.title} />
+        </DeferredPosterRow>
       ))}
     </div>
   )
 }
 
+// Title (22px) + gap-4 + 210px poster card: the fixed height of every PosterRow section,
+// so the placeholder reserves exactly the space the row will take.
+const POSTER_ROW_HEIGHT = 22 + 16 + 210
+
+// The home page stacks ~16 poster rows (~330 cards). Mounting them all on entry is what
+// made the page slow to switch to, so each row mounts once it comes within a screen of
+// the viewport and then stays mounted — unmounting would reset the row's own horizontal
+// scroll position. content-visibility keeps the mounted-but-offscreen rows out of layout
+// and paint while scrolling.
+function DeferredPosterRow({ children }: { children: React.ReactNode }): React.JSX.Element {
+  const scrollRef = useScrollContainer()
+  const ref = useRef<HTMLDivElement>(null)
+  const [shown, setShown] = useState(false)
+
+  useEffect(() => {
+    if (shown) return
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) setShown(true)
+      },
+      { root: scrollRef?.current ?? null, rootMargin: '1000px 0px' }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [shown, scrollRef])
+
+  return (
+    <div
+      ref={ref}
+      className="[contain-intrinsic-size:auto_248px] [content-visibility:auto]"
+      style={{ minHeight: shown ? undefined : POSTER_ROW_HEIGHT }}
+    >
+      {shown ? children : <PosterRowSkeleton />}
+    </div>
+  )
+}
+
+function PosterRowSkeleton(): React.JSX.Element {
+  return (
+    <section aria-hidden className="flex flex-col gap-4">
+      <div className="mx-6 h-[22px] w-36 animate-pulse rounded-md bg-surface-2" />
+      <div className="flex gap-3 overflow-x-hidden pl-6">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-[210px] w-[140px] shrink-0 animate-pulse rounded-xl bg-surface-2"
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
 function GenreRow({ genre, title }: { genre: GenreKey; title: string }): React.JSX.Element {
   const { data } = useSuspenseQuery(genreMoviesQuery(genre))
-  return <PosterRow title={title} items={data.results.map(movieToPoster)} max={20} />
+  return (
+    <PosterRow title={title} items={data.results.map(movieToPoster)} max={20} contextMenu={false} />
+  )
 }
 
 function ContinueWatchingSection(): React.JSX.Element | null {

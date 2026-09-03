@@ -15,7 +15,9 @@ const idbStorage = {
 export const queryPersister = createAsyncStoragePersister({
   storage: idbStorage,
   key: 'vesper.tquery-cache',
-  throttleTime: 1000
+  // Saves serialize on the main thread; a longer throttle coalesces scroll-driven
+  // fetch bursts into fewer writes.
+  throttleTime: 5000
 })
 
 export async function clearQueryCache(): Promise<void> {
