@@ -7,6 +7,7 @@ import Entry_1_8_0 from './1.8.0.mdx'
 import Entry_1_8_2 from './1.8.2.mdx'
 import Entry_1_9_0 from './1.9.0.mdx'
 import Entry_2_0_0 from './2.0.0.mdx'
+import Entry_2_1_0 from './2.1.0.mdx'
 
 export interface ChangelogEntry {
   version: string
@@ -17,6 +18,12 @@ export interface ChangelogEntry {
 }
 
 export const entries: ChangelogEntry[] = [
+  {
+    version: '2.1.0',
+    date: '2026-09-03',
+    summary: 'An Explore page, app icons you can pick, and the freeze on opening titles is gone.',
+    body: Entry_2_1_0
+  },
   {
     version: '2.0.0',
     date: '2026-09-02',
