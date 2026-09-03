@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { router } from '@renderer/router'
 
 const QUEUE_LIMIT = 6
+const VIEWPORT_MARGIN = '200px'
 let inFlight = 0
 const pending: Array<() => Promise<void>> = []
 const seen = new Set<string>()
@@ -20,6 +21,43 @@ function drain(): void {
 function enqueue(task: () => Promise<void>): void {
   pending.push(task)
   drain()
+}
+
+// One IntersectionObserver for every preloadable card. A per-card observer (hundreds on the home
+// page) made Blink recompute hundreds of intersections on every scrolled frame.
+const viewportTriggers = new WeakMap<Element, () => void>()
+let viewportObserver: IntersectionObserver | null = null
+
+function observeViewport(el: Element, trigger: () => void): () => void {
+  if (!viewportObserver) {
+    viewportObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          const fire = viewportTriggers.get(entry.target)
+          viewportTriggers.delete(entry.target)
+          viewportObserver?.unobserve(entry.target)
+          fire?.()
+        }
+      },
+      { rootMargin: VIEWPORT_MARGIN }
+    )
+  }
+  viewportTriggers.set(el, trigger)
+  viewportObserver.observe(el)
+  return () => {
+    viewportTriggers.delete(el)
+    viewportObserver?.unobserve(el)
+  }
+}
+
+// Viewport-driven preloads are speculative, so keep them off the frames that are busy scrolling.
+function whenIdle(fn: () => void): void {
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(() => fn(), { timeout: 1000 })
+  } else {
+    setTimeout(fn, 150)
+  }
 }
 
 export interface PreloadTarget {
@@ -53,24 +91,12 @@ export function usePreloadRoute(
       })
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            trigger()
-            observer.disconnect()
-            break
-          }
-        }
-      },
-      { rootMargin: '200px' }
-    )
-    observer.observe(el)
+    const unobserve = observeViewport(el, () => whenIdle(trigger))
     el.addEventListener('pointerenter', trigger)
     el.addEventListener('focus', trigger, true)
 
     return () => {
-      observer.disconnect()
+      unobserve()
       el.removeEventListener('pointerenter', trigger)
       el.removeEventListener('focus', trigger, true)
     }

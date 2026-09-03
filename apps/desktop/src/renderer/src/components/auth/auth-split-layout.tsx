@@ -11,8 +11,6 @@ export function AuthSplitLayout({ children }: Props): React.JSX.Element {
       <TopBar
         leftCollapsed={false}
         rightCollapsed={false}
-        leftWidth={0}
-        rightWidth={0}
         onExpandLeft={() => undefined}
         onExpandRight={() => undefined}
         minimal
