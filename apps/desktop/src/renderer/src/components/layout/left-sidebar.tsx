@@ -10,6 +10,7 @@ import { ListFormModal } from '@renderer/components/library/list-form-modal'
 import { ListContextMenu } from '@renderer/components/library/list-context-menu'
 import { FeedbackModal } from '@renderer/components/feedback/feedback-modal'
 import { UpdateCard } from './update-card'
+import { useSmoothScroll } from '@renderer/hooks/use-smooth-scroll'
 import { tmdbImage } from '@renderer/lib/tmdb'
 import { api } from '@convex/_generated/api'
 import type { Id } from '@convex/_generated/dataModel'
@@ -174,6 +175,8 @@ export const LeftSidebar = memo(function LeftSidebar({
   )
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const scrollContentRef = useRef<HTMLDivElement | null>(null)
+  useSmoothScroll(scrollRef, scrollContentRef)
 
   const confirmReorder = async (
     movedId: Id<'lists'>,
@@ -230,27 +233,11 @@ export const LeftSidebar = memo(function LeftSidebar({
           </IconButton>
         </div>
       </header>
-      <div ref={scrollRef} className="scroll-hide flex flex-1 flex-col gap-0.5 overflow-y-auto">
-        <ul className="flex flex-col gap-0.5">
-          <AnimatePresence initial={false} mode="popLayout">
-            {systemLists.map((list) => (
-              <motion.li
-                key={list._id}
-                layout={reduced ? false : true}
-                initial={reduced ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={ROW_ANIM}
-              >
-                {renderItem(list)}
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </ul>
-        {pinnedCustom.length > 0 ? (
+      <div ref={scrollRef} className="scroll-hide flex-1 overflow-y-auto">
+        <div ref={scrollContentRef} className="flex flex-col gap-0.5">
           <ul className="flex flex-col gap-0.5">
             <AnimatePresence initial={false} mode="popLayout">
-              {pinnedCustom.map((list) => (
+              {systemLists.map((list) => (
                 <motion.li
                   key={list._id}
                   layout={reduced ? false : true}
@@ -264,15 +251,33 @@ export const LeftSidebar = memo(function LeftSidebar({
               ))}
             </AnimatePresence>
           </ul>
-        ) : null}
-        {unpinnedCustom.length > 0 ? (
-          <DragSection
-            lists={unpinnedCustom}
-            renderItem={renderItem}
-            scrollRef={scrollRef}
-            onReorderConfirmed={confirmReorder}
-          />
-        ) : null}
+          {pinnedCustom.length > 0 ? (
+            <ul className="flex flex-col gap-0.5">
+              <AnimatePresence initial={false} mode="popLayout">
+                {pinnedCustom.map((list) => (
+                  <motion.li
+                    key={list._id}
+                    layout={reduced ? false : true}
+                    initial={reduced ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={ROW_ANIM}
+                  >
+                    {renderItem(list)}
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          ) : null}
+          {unpinnedCustom.length > 0 ? (
+            <DragSection
+              lists={unpinnedCustom}
+              renderItem={renderItem}
+              scrollRef={scrollRef}
+              onReorderConfirmed={confirmReorder}
+            />
+          ) : null}
+        </div>
       </div>
       <UpdateCard />
       <div className="relative flex items-center gap-1.5 px-2 pb-2 text-[12px] leading-4 font-medium text-text-muted">

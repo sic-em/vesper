@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import { useQuery } from 'convex/react'
 import { useNavigate } from '@tanstack/react-router'
 import { IconButton } from '@renderer/components/ui/icon-button'
@@ -8,6 +8,7 @@ import { FriendRow, type FriendStatus } from './friend-row'
 import { FriendContextMenu } from './friend-context-menu'
 import { tmdbImage } from '@renderer/lib/tmdb'
 import { useInterpolatedProgress } from '@renderer/lib/use-interpolated-progress'
+import { useSmoothScroll } from '@renderer/hooks/use-smooth-scroll'
 import { cn } from '@renderer/lib/cn'
 import { api } from '@convex/_generated/api'
 import type { FunctionReturnType } from 'convex/server'
@@ -21,6 +22,9 @@ export const RightSidebar = memo(function RightSidebar({
 }): React.JSX.Element {
   const navigate = useNavigate()
   const rows = useQuery(api.friendships.listActivity)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const scrollContentRef = useRef<HTMLDivElement | null>(null)
+  useSmoothScroll(scrollRef, scrollContentRef)
 
   return (
     <aside
@@ -34,23 +38,25 @@ export const RightSidebar = memo(function RightSidebar({
           <SidebarRightIcon className={cn('size-[18px]')} />
         </IconButton>
       </header>
-      <div className={cn('scroll-hide flex-1 overflow-y-auto')}>
-        {rows === undefined ? null : rows.length === 0 ? (
-          <EmptyState onFindFriends={() => navigate({ to: '/friends' })} />
-        ) : (
-          <ul className={cn('flex flex-col')}>
-            {rows.map((row) => (
-              <li key={row.userId}>
-                <ActivityRow
-                  row={row}
-                  onClick={() =>
-                    navigate({ to: '/user/$username', params: { username: row.username } })
-                  }
-                />
-              </li>
-            ))}
-          </ul>
-        )}
+      <div ref={scrollRef} className={cn('scroll-hide flex-1 overflow-y-auto')}>
+        <div ref={scrollContentRef}>
+          {rows === undefined ? null : rows.length === 0 ? (
+            <EmptyState onFindFriends={() => navigate({ to: '/friends' })} />
+          ) : (
+            <ul className={cn('flex flex-col')}>
+              {rows.map((row) => (
+                <li key={row.userId}>
+                  <ActivityRow
+                    row={row}
+                    onClick={() =>
+                      navigate({ to: '/user/$username', params: { username: row.username } })
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </aside>
   )
