@@ -1,6 +1,6 @@
 import { app, ipcMain, nativeImage, shell, type BrowserWindow, type NativeImage } from 'electron'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
-import { join, sep } from 'node:path'
+import { basename, extname, join, sep } from 'node:path'
 import icon from '../../resources/icon.png?asset'
 import iconMac from '../../resources/icon-mac.png?asset'
 import hiddenLeaf from '../../resources/icons/hidden-leaf.png?asset'
@@ -80,14 +80,22 @@ function shellReadablePath(path: string): string {
   return path.replace(`${sep}app.asar${sep}`, `${sep}app.asar.unpacked${sep}`)
 }
 
+// The installer names its shortcuts after the product ("Vesper.lnk"), which is
+// also the exe's name. app.getName() would give the package name instead, since
+// package.json carries no productName, so it never matched a real shortcut.
+function shortcutNames(): string[] {
+  const names = [basename(process.execPath, extname(process.execPath)), app.getName()]
+  return [...new Set(names)].map((n) => `${n}.lnk`)
+}
+
 function shortcutPaths(): string[] {
-  const name = `${app.getName()}.lnk`
   const appData = app.getPath('appData')
-  return [
-    join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', name),
-    join(app.getPath('desktop'), name),
-    join(appData, 'Microsoft', 'Internet Explorer', 'Quick Launch', 'User Pinned', 'TaskBar', name)
+  const dirs = [
+    join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+    app.getPath('desktop'),
+    join(appData, 'Microsoft', 'Internet Explorer', 'Quick Launch', 'User Pinned', 'TaskBar')
   ]
+  return dirs.flatMap((dir) => shortcutNames().map((name) => join(dir, name)))
 }
 
 // Windows ties the taskbar button to the shortcut matching the app's
