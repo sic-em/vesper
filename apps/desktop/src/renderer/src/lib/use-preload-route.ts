@@ -67,8 +67,13 @@ export interface PreloadTarget {
 
 export function usePreloadRoute(
   ref: React.RefObject<HTMLElement | null>,
-  target: PreloadTarget | null
+  target: PreloadTarget | null,
+  // Viewport preloading suits short bounded rows. On endless grids it turns scrolling into a
+  // preload firehose (detail loaders fetch full-size art), so those pass viewport: false and
+  // keep only the hover/focus intent triggers.
+  opts?: { viewport?: boolean }
 ): void {
+  const viewport = opts?.viewport ?? true
   useEffect(() => {
     if (!target) return
     const el = ref.current
@@ -91,14 +96,14 @@ export function usePreloadRoute(
       })
     }
 
-    const unobserve = observeViewport(el, () => whenIdle(trigger))
+    const unobserve = viewport ? observeViewport(el, () => whenIdle(trigger)) : undefined
     el.addEventListener('pointerenter', trigger)
     el.addEventListener('focus', trigger, true)
 
     return () => {
-      unobserve()
+      unobserve?.()
       el.removeEventListener('pointerenter', trigger)
       el.removeEventListener('focus', trigger, true)
     }
-  }, [target?.to, target ? JSON.stringify(target.params) : ''])
+  }, [target?.to, target ? JSON.stringify(target.params) : '', viewport])
 }

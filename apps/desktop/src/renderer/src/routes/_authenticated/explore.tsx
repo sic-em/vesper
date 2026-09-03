@@ -1,0 +1,252 @@
+import { memo, useMemo, useRef } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { Button as BaseButton } from '@base-ui/react/button'
+import { Segmented } from '@renderer/components/ui/segmented'
+import { Select } from '@renderer/components/ui/select'
+import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
+import { LoadMore } from '@renderer/components/ui/load-more'
+import { MediaContextMenu } from '@renderer/components/library/media-context-menu'
+import { genreIcon } from '@renderer/components/explore-icons'
+import { usePreloadRoute } from '@renderer/lib/use-preload-route'
+import {
+  discoverInfiniteQuery,
+  EXPLORE_MOVIE_GENRES,
+  EXPLORE_SORTS,
+  EXPLORE_TV_GENRES,
+  type ExploreSort
+} from '@renderer/lib/tmdb-queries'
+import { tmdbImage, type TmdbMovie, type TmdbShow } from '@renderer/lib/tmdb'
+
+type ExploreType = 'movie' | 'tv'
+
+// Defaults ('movie', 'popular', all genres) are left out of the URL so a plain /explore link works.
+interface ExploreSearch {
+  type?: ExploreType
+  sort?: ExploreSort
+  genre?: number
+}
+
+const SORT_VALUES = EXPLORE_SORTS.map((s) => s.value)
+const ALL_GENRES = 'all'
+
+function isSort(v: unknown): v is ExploreSort {
+  return typeof v === 'string' && (SORT_VALUES as string[]).includes(v)
+}
+
+function parseGenre(value: unknown, type: ExploreType | undefined): number | undefined {
+  const id = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+  if (!Number.isFinite(id)) return undefined
+  const ids = type === 'tv' ? EXPLORE_TV_GENRES : EXPLORE_MOVIE_GENRES
+  return ids.some((g) => g.id === id) ? id : undefined
+}
+
+export const Route = createFileRoute('/_authenticated/explore')({
+  validateSearch: (search): ExploreSearch => {
+    const type = search.type === 'tv' ? 'tv' : undefined
+    return {
+      type,
+      sort: isSort(search.sort) && search.sort !== 'popular' ? search.sort : undefined,
+      genre: parseGenre(search.genre, type)
+    }
+  },
+  component: ExplorePage
+})
+
+interface ExploreItem {
+  id: number
+  title: string
+  posterPath: string
+}
+
+function itemTitle(item: TmdbMovie | TmdbShow): string {
+  return 'title' in item ? item.title : item.name
+}
+
+function ExplorePage(): React.JSX.Element {
+  const { type = 'movie', sort = 'popular', genre } = Route.useSearch()
+  const navigate = useNavigate({ from: Route.fullPath })
+  const selected = useMemo(() => (genre !== undefined ? [genre] : []), [genre])
+
+  const query = useInfiniteQuery(discoverInfiniteQuery(type, sort, selected))
+
+  const items = useMemo<ExploreItem[]>(() => {
+    const seen = new Set<number>()
+    const out: ExploreItem[] = []
+    for (const page of query.data?.pages ?? []) {
+      for (const item of page.results) {
+        if (!item.poster_path || seen.has(item.id)) continue
+        seen.add(item.id)
+        out.push({ id: item.id, title: itemTitle(item), posterPath: item.poster_path })
+      }
+    }
+    return out
+  }, [query.data])
+
+  const patchSearch = (patch: Partial<ExploreSearch>): void => {
+    void navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true })
+  }
+
+  const genreOptions = type === 'movie' ? EXPLORE_MOVIE_GENRES : EXPLORE_TV_GENRES
+
+  return (
+    <div className="flex flex-col gap-5 px-6 pt-5 pb-12">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[24px] leading-tight font-bold tracking-[-0.02em] text-text">
+          Explore
+        </h1>
+        <div className="flex items-center gap-2">
+          <Segmented<ExploreType>
+            options={[
+              { value: 'movie', label: 'Movies' },
+              { value: 'tv', label: 'Series' }
+            ]}
+            value={type}
+            onChange={(next) => {
+              // Movie and series genre ids don't overlap, so a type switch drops the pick.
+              if (next !== type) patchSearch({ type: next, genre: undefined })
+            }}
+          />
+          <Select
+            ariaLabel="Genre"
+            value={genre !== undefined ? String(genre) : ALL_GENRES}
+            onChange={(v) => {
+              if (v === ALL_GENRES) {
+                patchSearch({ genre: undefined })
+                return
+              }
+              const id = Number(v)
+              if (Number.isFinite(id)) patchSearch({ genre: id })
+            }}
+            options={[
+              { value: ALL_GENRES, label: 'All genres' },
+              ...genreOptions.map((g) => {
+                const Icon = genreIcon(g.id)
+                return { value: String(g.id), label: g.label, icon: Icon ? <Icon /> : undefined }
+              })
+            ]}
+          />
+          <Select
+            ariaLabel="Sort by"
+            value={sort}
+            onChange={(v) => {
+              if (isSort(v)) patchSearch({ sort: v })
+            }}
+            options={EXPLORE_SORTS.map((s) => ({ value: s.value, label: s.label }))}
+          />
+        </div>
+      </header>
+
+      <SkeletonSwap
+        ready={!query.isPending}
+        reserve="auto"
+        label="Explore results"
+        skeleton={<SkeletonGrid />}
+      >
+        {items.length === 0 && !query.isPending ? (
+          <EmptyResults
+            hasFilters={genre !== undefined}
+            onClear={() => patchSearch({ genre: undefined })}
+          />
+        ) : (
+          <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+              {items.map((item) => (
+                <ExploreCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  posterPath={item.posterPath}
+                  type={type}
+                />
+              ))}
+            </div>
+            {items.length > 0 ? (
+              <LoadMore
+                hasMore={query.hasNextPage}
+                onLoad={() => query.fetchNextPage()}
+                rootMargin="1500px 0px"
+                className="py-2"
+              />
+            ) : null}
+          </div>
+        )}
+      </SkeletonSwap>
+    </div>
+  )
+}
+
+const ExploreCard = memo(function ExploreCard({
+  id,
+  title,
+  posterPath,
+  type
+}: {
+  id: number
+  title: string
+  posterPath: string
+  type: ExploreType
+}): React.JSX.Element {
+  const navigate = useNavigate()
+  const ref = useRef<HTMLButtonElement>(null)
+  const target = {
+    to: type === 'movie' ? ('/movie/$id' as const) : ('/tv/$id' as const),
+    params: { id: String(id) }
+  }
+  usePreloadRoute(ref, target, { viewport: false })
+  return (
+    <MediaContextMenu mediaType={type} tmdbId={id} title={title} posterPath={posterPath}>
+      <BaseButton
+        ref={ref}
+        onClick={() => navigate({ ...target, viewTransition: false })}
+        className="relative aspect-[2/3] w-full overflow-hidden rounded-xl bg-surface-2 outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+        aria-label={title}
+      >
+        <img
+          src={tmdbImage(posterPath, 'w342')}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          className="absolute inset-0 size-full object-cover"
+        />
+      </BaseButton>
+    </MediaContextMenu>
+  )
+})
+
+function SkeletonGrid(): React.JSX.Element {
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+      {Array.from({ length: 18 }).map((_, i) => (
+        <div key={i} className="aspect-[2/3] w-full animate-pulse rounded-xl bg-surface-2" />
+      ))}
+    </div>
+  )
+}
+
+function EmptyResults({
+  hasFilters,
+  onClear
+}: {
+  hasFilters: boolean
+  onClear: () => void
+}): React.JSX.Element {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 px-4 py-20 text-center">
+      <div className="text-[16px] font-semibold text-text">Nothing matches these filters</div>
+      <div className="text-[13px] font-medium text-text-tertiary">
+        Try another genre or switching the sort.
+      </div>
+      {hasFilters ? (
+        <button
+          type="button"
+          onClick={onClear}
+          className="mt-1 flex h-8 items-center rounded-full bg-white/[0.06] px-4 text-[13px] font-medium text-text outline-none transition-colors hover:bg-white/[0.10] active:opacity-70"
+        >
+          Clear genre
+        </button>
+      ) : null}
+    </div>
+  )
+}
