@@ -105,8 +105,7 @@ function AuthedLayout(): React.JSX.Element {
   const rightInnerRef = useRef<HTMLDivElement>(null)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
-  const smoothScroll = pathname === '/' || pathname === '/explore'
-  const lenisRef = useSmoothScroll(scrollRef, scrollContentRef, smoothScroll)
+  const lenisRef = useSmoothScroll(scrollRef, scrollContentRef)
 
   useEffect(() => {
     // Lenis keeps its own scroll target; jumping the element directly would snap back.
@@ -242,7 +241,12 @@ function AuthedLayout(): React.JSX.Element {
             <main className="h-full min-w-0 overflow-hidden rounded-lg bg-surface">
               <div
                 ref={scrollRef}
-                className={cn('h-full overflow-y-auto', pathname !== '/explore' && 'scroll-hide')}
+                className={cn(
+                  'h-full overflow-y-auto',
+                  // Explore is the one pane with a visible scrollbar; reserve its gutter so
+                  // the grid's column width doesn't jump when content grows past the fold.
+                  pathname === '/explore' ? '[scrollbar-gutter:stable]' : 'scroll-hide'
+                )}
               >
                 <div ref={scrollContentRef}>
                   <ScrollContainerContext.Provider value={scrollRef}>

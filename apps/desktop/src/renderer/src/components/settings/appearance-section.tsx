@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Tooltip } from '@renderer/components/ui/tooltip'
 
 import popcornImg from './variant-icons/popcorn.png'
 import hiddenLeafImg from './variant-icons/hidden-leaf.png'
@@ -56,29 +57,30 @@ export function AppearanceSection(): React.JSX.Element {
       <div className="flex flex-col gap-0.5 px-1 pt-3">
         <span className="text-[13px] leading-4 font-medium text-text">App icon</span>
         <span className="text-[12px] leading-4 font-medium text-text-muted">
-          Changes the icon shown in your taskbar and Dock.
+          Changes the icon in your taskbar, Start Menu, and Dock. On Windows the taskbar button
+          catches up the next time you open Vesper.
         </span>
       </div>
       <div className="flex flex-wrap gap-3 px-1">
         {VARIANTS.map((v) => (
-          <button
-            key={v.id}
-            type="button"
-            title={v.label}
-            aria-label={`${v.label} icon`}
-            aria-pressed={variant === v.id}
-            onClick={() => select(v.id)}
-            className={`h-[64px] w-[64px] overflow-hidden rounded-lg bg-surface-2 outline-none transition-[transform,opacity] duration-150 hover:scale-[1.05] focus-visible:ring-2 focus-visible:ring-white/30 ${
-              variant === v.id ? 'opacity-100' : 'opacity-50'
-            }`}
-          >
-            <img
-              src={v.image}
-              alt=""
-              draggable={false}
-              className="h-full w-full object-cover select-none"
-            />
-          </button>
+          <Tooltip key={v.id} label={v.label}>
+            <button
+              type="button"
+              aria-label={`${v.label} icon`}
+              aria-pressed={variant === v.id}
+              onClick={() => select(v.id)}
+              className={`h-[64px] w-[64px] overflow-hidden rounded-lg bg-surface-2 outline-none transition-[transform,opacity] duration-150 hover:scale-[1.05] focus-visible:ring-2 focus-visible:ring-white/30 ${
+                variant === v.id ? 'opacity-100' : 'opacity-50'
+              }`}
+            >
+              <img
+                src={v.image}
+                alt=""
+                draggable={false}
+                className="h-full w-full object-cover select-none"
+              />
+            </button>
+          </Tooltip>
         ))}
       </div>
     </div>

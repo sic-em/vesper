@@ -1,5 +1,5 @@
 import { ProgressBar } from '@renderer/components/ui/progress-bar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { Tooltip } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/lib/cn'
 
 export type FriendStatus = 'watching' | 'paused' | 'idle' | 'offline'
@@ -47,16 +47,11 @@ function StatusDot({
   positionStyle?: React.CSSProperties
 }): React.JSX.Element {
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span
-            className={cn('rounded-full ring-2 ring-surface', STATUS_DOT[status], className)}
-            style={{ width: size, height: size, ...positionStyle }}
-          />
-        }
+    <Tooltip label={STATUS_LABEL[status]} className={className} style={positionStyle}>
+      <span
+        className={cn('rounded-full ring-2 ring-surface', STATUS_DOT[status])}
+        style={{ width: size, height: size }}
       />
-      <TooltipContent>{STATUS_LABEL[status]}</TooltipContent>
     </Tooltip>
   )
 }
