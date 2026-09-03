@@ -60,6 +60,9 @@ const api = {
     open: (id: 'vlc' | 'iina' | 'mpv', url: string, positionSec: number) =>
       ipcRenderer.invoke('externalPlayer:open', id, url, positionSec) as Promise<void>
   },
+  app: {
+    relaunch: () => ipcRenderer.invoke('app:relaunch') as Promise<void>
+  },
   appIcon: {
     getVariant: () => ipcRenderer.invoke('appIcon:getVariant') as Promise<IconVariantId>,
     setVariant: (id: IconVariantId) => ipcRenderer.invoke('appIcon:setVariant', id) as Promise<void>

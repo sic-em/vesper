@@ -56,6 +56,9 @@ export interface VesperApi {
     list: () => Promise<Array<{ id: 'vlc' | 'iina' | 'mpv'; name: string }>>
     open: (id: 'vlc' | 'iina' | 'mpv', url: string, positionSec: number) => Promise<void>
   }
+  app: {
+    relaunch: () => Promise<void>
+  }
   appIcon: {
     getVariant: () => Promise<IconVariantId>
     setVariant: (id: IconVariantId) => Promise<void>
