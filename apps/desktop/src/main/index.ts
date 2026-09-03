@@ -429,6 +429,13 @@ app.whenReady().then(() => {
     event.sender.toggleDevTools()
   })
 
+  // Windows rereads a shortcut's icon only when it launches the app, so the icon
+  // picker offers a restart to make the new one show up on the taskbar.
+  ipcMain.handle('app:relaunch', () => {
+    app.relaunch()
+    app.quit()
+  })
+
   ipcMain.handle('externalPlayer:list', () => listExternalPlayers())
   ipcMain.handle(
     'externalPlayer:open',

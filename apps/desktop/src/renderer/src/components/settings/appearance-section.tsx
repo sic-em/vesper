@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Dialog } from '@base-ui/react/dialog'
 import { Tooltip } from '@renderer/components/ui/tooltip'
+import { Button } from '@renderer/components/ui/button'
+import { SquircleSurface } from '@renderer/components/ui/squircle-surface'
+import { isWindows } from '@renderer/lib/platform'
 
 import popcornImg from './variant-icons/popcorn.png'
 import hiddenLeafImg from './variant-icons/hidden-leaf.png'
@@ -36,6 +40,7 @@ const VARIANTS: IconVariant[] = [
 
 export function AppearanceSection(): React.JSX.Element {
   const [variant, setVariant] = useState<IconVariantId>('popcorn')
+  const [restartOpen, setRestartOpen] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -48,8 +53,16 @@ export function AppearanceSection(): React.JSX.Element {
   }, [])
 
   const select = (id: IconVariantId): void => {
+    if (id === variant) return
+    const previous = variant
     setVariant(id)
-    window.api.appIcon.setVariant(id).catch(() => setVariant((prev) => prev))
+    window.api.appIcon
+      .setVariant(id)
+      .then(() => {
+        // Windows rereads the shortcut icon only on launch, so the taskbar needs a restart.
+        if (isWindows) setRestartOpen(true)
+      })
+      .catch(() => setVariant(previous))
   }
 
   return (
@@ -57,8 +70,7 @@ export function AppearanceSection(): React.JSX.Element {
       <div className="flex flex-col gap-0.5 px-1 pt-3">
         <span className="text-[13px] leading-4 font-medium text-text">App icon</span>
         <span className="text-[12px] leading-4 font-medium text-text-muted">
-          Changes the icon in your taskbar, Start Menu, and Dock. On Windows the taskbar button
-          catches up the next time you open Vesper.
+          Changes the icon in your taskbar, Start Menu, and Dock.
         </span>
       </div>
       <div className="flex flex-wrap gap-3 px-1">
@@ -83,6 +95,46 @@ export function AppearanceSection(): React.JSX.Element {
           </Tooltip>
         ))}
       </div>
+
+      <Dialog.Root open={restartOpen} onOpenChange={setRestartOpen}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+          <Dialog.Popup
+            aria-label="Restart Vesper"
+            className="fixed top-1/2 left-1/2 z-50 w-[400px] -translate-x-1/2 -translate-y-1/2 outline-none"
+          >
+            <SquircleSurface variant="frame" className="p-1.5 shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col gap-1.5 px-2.5 pt-2 pb-1">
+                <Dialog.Title className="text-[15px] leading-5 font-medium text-text">
+                  Restart to see the new icon
+                </Dialog.Title>
+                <Dialog.Description className="text-[13px] leading-5 font-medium text-text-tertiary">
+                  Windows picks up the taskbar icon when Vesper starts. Your pick is saved either
+                  way.
+                </Dialog.Description>
+              </div>
+              <footer className="flex justify-end gap-2 px-1 pt-3 pb-0.5">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  onClick={() => setRestartOpen(false)}
+                >
+                  Not now
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="md"
+                  onClick={() => void window.api.app.relaunch()}
+                >
+                  Restart now
+                </Button>
+              </footer>
+            </SquircleSurface>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   )
 }
