@@ -73,7 +73,9 @@ export const Route = createFileRoute('/_authenticated/movie/$id')({
     const details = await qc.ensureQueryData(movieDetailsQuery(id))
     preloadImage(tmdbImage(details.backdrop_path, 'original'))
     preloadImage(tmdbImage(details.poster_path, 'original'))
-    await prefetchHeroExtras(qc, details)
+    // Ratings and fanart render into the hero as they arrive (non-suspense queries), so
+    // don't hold the navigation on them — fanart.tv alone can take over a second.
+    void prefetchHeroExtras(qc, details)
     if (details.imdb_id) {
       void ensureScrape({ mediaType: 'movie', imdbId: details.imdb_id }).catch(() => {
         /* torrentio may be down/rate-limited; non-fatal */
