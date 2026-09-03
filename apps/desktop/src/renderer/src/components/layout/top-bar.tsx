@@ -23,7 +23,7 @@ const NAV_MARGIN = isWindows ? 16 : 24 // ml-4 / ml-6
 const RIGHT_PAD = 10 // pr-2.5
 const SEARCH_MAX = 560
 const SEARCH_GUTTER = 16 // minimum breathing room between the search bar and its neighbours
-const WIN_CONTROLS_WIDTH = 138 // 3 buttons × 46
+const WIN_CONTROLS_WIDTH = 114 // 3 buttons × 32 + 2 gaps × 4 + pr-2.5
 
 export interface TopBarProps {
   leftCollapsed: boolean
@@ -137,14 +137,17 @@ export function TopBar({
   )
 }
 
+const WIN_CONTROL =
+  'flex size-8 shrink-0 items-center justify-center rounded-full bg-transparent text-text-tertiary outline-none transition-colors duration-150 ease-out active:opacity-70'
+
 function WindowsControls(): React.JSX.Element {
   return (
-    <div className="app-no-drag flex shrink-0 items-center">
+    <div className="app-no-drag flex shrink-0 items-center gap-1 pr-2.5">
       <button
         type="button"
         aria-label="Minimize"
         onClick={() => window.api.window.minimize()}
-        className="flex h-10 w-[46px] items-center justify-center bg-transparent text-text-tertiary outline-none hover:bg-white/[0.08]"
+        className={`${WIN_CONTROL} hover:bg-white/[0.08] hover:text-text`}
       >
         <WinMinimizeIcon className="size-4" />
       </button>
@@ -152,7 +155,7 @@ function WindowsControls(): React.JSX.Element {
         type="button"
         aria-label="Maximize"
         onClick={() => window.api.window.toggleMaximize()}
-        className="flex h-10 w-[46px] items-center justify-center bg-transparent text-text-tertiary outline-none hover:bg-white/[0.08]"
+        className={`${WIN_CONTROL} hover:bg-white/[0.08] hover:text-text`}
       >
         <WinMaximizeIcon className="size-4" />
       </button>
@@ -160,7 +163,7 @@ function WindowsControls(): React.JSX.Element {
         type="button"
         aria-label="Close"
         onClick={() => window.api.window.close()}
-        className="flex h-10 w-[46px] items-center justify-center bg-transparent text-text-tertiary outline-none hover:bg-[#e81123] hover:text-white"
+        className={`${WIN_CONTROL} hover:bg-[#e81123] hover:text-white`}
       >
         <WinCloseIcon className="size-4" />
       </button>

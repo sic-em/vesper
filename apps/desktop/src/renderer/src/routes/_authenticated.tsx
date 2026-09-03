@@ -20,6 +20,8 @@ const RIGHT_DEFAULT = 280
 const LEFT_MAX = 400
 const RIGHT_MAX = 400
 const ANIM_MS = 220
+const FADE_OUT_MS = 140
+const FADE_IN_MS = 180
 const SHELL_PAD = 16
 const SNAP_THRESHOLD = 10
 
@@ -31,6 +33,27 @@ const INITIAL: ShellLayout = {
 }
 
 const easeOutQuart = (t: number): number => 1 - Math.pow(1 - t, 4)
+
+// A sidebar laid out at `width: 100%` re-wraps its text on every frame of a collapse tween, so
+// copy visibly squishes on the way out. Pinning the pane's content to the width it animates from
+// (or to, on expand) makes it clip and slide instead, and the fade keeps the last narrow frames
+// from reading as a hard cut.
+function pinPane(el: HTMLDivElement | null, width: number, show: boolean): void {
+  if (!el) return
+  el.style.transition = 'none'
+  el.style.width = `${width}px`
+  el.style.opacity = show ? '0' : '1'
+  void el.offsetWidth
+  el.style.transition = `opacity ${show ? FADE_IN_MS : FADE_OUT_MS}ms ease-out`
+  el.style.opacity = show ? '1' : '0'
+}
+
+function unpinPane(el: HTMLDivElement | null): void {
+  if (!el) return
+  el.style.transition = ''
+  el.style.width = ''
+  el.style.opacity = ''
+}
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context, location }) => {
@@ -74,6 +97,8 @@ function AuthedLayout(): React.JSX.Element {
   const animatingRef = useRef(false)
   const rafRef = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const leftInnerRef = useRef<HTMLDivElement>(null)
+  const rightInnerRef = useRef<HTMLDivElement>(null)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   useEffect(() => {
@@ -114,22 +139,34 @@ function AuthedLayout(): React.JSX.Element {
   }
 
   const collapseLeft = useCallback((): void => {
+    const el = leftInnerRef.current
+    pinPane(el, sizesRef.current[0] ?? 0, false)
     tween(target(0, sizesRef.current[2] ?? 0), () => {
+      unpinPane(el)
       setLayout((p) => ({ ...p, leftVisible: false }))
     })
   }, [tween, setLayout])
   const expandLeft = useCallback((): void => {
     setLayout((p) => ({ ...p, leftVisible: true }))
-    tween(target(layoutRef.current.leftWidth || LEFT_DEFAULT, sizesRef.current[2] ?? 0))
+    const el = leftInnerRef.current
+    const width = layoutRef.current.leftWidth || LEFT_DEFAULT
+    pinPane(el, width, true)
+    tween(target(width, sizesRef.current[2] ?? 0), () => unpinPane(el))
   }, [tween, setLayout])
   const collapseRight = useCallback((): void => {
+    const el = rightInnerRef.current
+    pinPane(el, sizesRef.current[2] ?? 0, false)
     tween(target(sizesRef.current[0] ?? 0, 0), () => {
+      unpinPane(el)
       setLayout((p) => ({ ...p, rightVisible: false }))
     })
   }, [tween, setLayout])
   const expandRight = useCallback((): void => {
     setLayout((p) => ({ ...p, rightVisible: true }))
-    tween(target(sizesRef.current[0] ?? 0, layoutRef.current.rightWidth || RIGHT_DEFAULT))
+    const el = rightInnerRef.current
+    const width = layoutRef.current.rightWidth || RIGHT_DEFAULT
+    pinPane(el, width, true)
+    tween(target(sizesRef.current[0] ?? 0, width), () => unpinPane(el))
   }, [tween, setLayout])
 
   const handleChange = (sizes: number[]): void => {
@@ -186,8 +223,10 @@ function AuthedLayout(): React.JSX.Element {
           defaultSizes={defaultSizes}
         >
           <Allotment.Pane minSize={0} maxSize={LEFT_MAX} preferredSize={LEFT_DEFAULT} snap>
-            <div className="h-full overflow-hidden pr-1.5">
-              <LeftSidebar onCollapse={collapseLeft} />
+            <div className="flex h-full justify-end overflow-hidden">
+              <div ref={leftInnerRef} className="h-full w-full shrink-0 pr-1.5">
+                <LeftSidebar onCollapse={collapseLeft} />
+              </div>
             </div>
           </Allotment.Pane>
           <Allotment.Pane priority={LayoutPriority.High}>
@@ -198,8 +237,10 @@ function AuthedLayout(): React.JSX.Element {
             </main>
           </Allotment.Pane>
           <Allotment.Pane minSize={0} maxSize={RIGHT_MAX} preferredSize={RIGHT_DEFAULT} snap>
-            <div className="h-full overflow-hidden pl-1.5">
-              <RightSidebar onCollapse={collapseRight} />
+            <div className="flex h-full overflow-hidden">
+              <div ref={rightInnerRef} className="h-full w-full shrink-0 pl-1.5">
+                <RightSidebar onCollapse={collapseRight} />
+              </div>
             </div>
           </Allotment.Pane>
         </Allotment>
