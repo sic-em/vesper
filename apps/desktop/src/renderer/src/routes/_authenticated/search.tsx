@@ -5,6 +5,7 @@ import { useQuery as useConvexQuery, useMutation } from 'convex/react'
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Avatar } from '@renderer/components/ui/avatar'
 import { ScrollSection } from '@renderer/components/ui/scroll-section'
+import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
 import { PosterRow, type PosterRowItem } from '@renderer/components/media/poster-row'
 import { CastCard } from '@renderer/components/media/cast-card'
 import { searchMoviesQuery, searchPeopleQuery, searchTvQuery } from '@renderer/lib/tmdb-queries'
@@ -63,81 +64,86 @@ function SearchPage(): React.JSX.Element {
         </h1>
       </header>
 
-      {loading ? (
-        <SkeletonSections />
-      ) : allEmpty ? (
-        <EmptyResults query={query} />
-      ) : (
-        <div className="-mx-6 flex flex-col gap-8">
-          {movieItems.length > 0 ? (
-            <PosterRow
-              title="Movies"
-              max={20}
-              items={movieItems.map(
-                (m): PosterRowItem => ({
-                  id: m.id,
-                  title: m.title,
-                  poster: tmdbImage(m.poster_path, 'w342') ?? '',
-                  posterPath: m.poster_path ?? undefined,
-                  type: 'movie'
-                })
-              )}
-            />
-          ) : null}
-          {tvItems.length > 0 ? (
-            <PosterRow
-              title="Series"
-              max={20}
-              items={tvItems.map(
-                (s): PosterRowItem => ({
-                  id: s.id,
-                  title: s.name,
-                  poster: tmdbImage(s.poster_path, 'w342') ?? '',
-                  posterPath: s.poster_path ?? undefined,
-                  type: 'tv'
-                })
-              )}
-            />
-          ) : null}
-          {peopleItems.length > 0 ? (
-            <ScrollSection title="People">
-              {peopleItems.slice(0, 20).map((p) => (
-                <CastCard
-                  key={p.id}
-                  personId={p.id}
-                  name={p.name ?? ''}
-                  character={p.known_for_department ?? ''}
-                  profilePath={p.profile_path ?? null}
-                />
-              ))}
-            </ScrollSection>
-          ) : null}
-          {userItems.length > 0 ? (
-            <ScrollSection title="Users">
-              {userItems.map((u) => (
-                <UserCard
-                  key={u._id}
-                  user={u}
-                  onClick={() => {
-                    void recordHistory({
-                      kind: 'user',
-                      username: u.username,
-                      title: u.displayName,
-                      subtitle: `@${u.username}`,
-                      avatarUrl: u.avatarUrl
-                    })
-                    navigate({
-                      to: '/user/$username',
-                      params: { username: u.username },
-                      viewTransition: false
-                    })
-                  }}
-                />
-              ))}
-            </ScrollSection>
-          ) : null}
-        </div>
-      )}
+      <SkeletonSwap
+        ready={!loading}
+        reserve="auto"
+        label="Search results"
+        skeleton={<SkeletonSections />}
+      >
+        {allEmpty ? (
+          <EmptyResults query={query} />
+        ) : (
+          <div className="-mx-6 flex flex-col gap-8">
+            {movieItems.length > 0 ? (
+              <PosterRow
+                title="Movies"
+                max={20}
+                items={movieItems.map(
+                  (m): PosterRowItem => ({
+                    id: m.id,
+                    title: m.title,
+                    poster: tmdbImage(m.poster_path, 'w342') ?? '',
+                    posterPath: m.poster_path ?? undefined,
+                    type: 'movie'
+                  })
+                )}
+              />
+            ) : null}
+            {tvItems.length > 0 ? (
+              <PosterRow
+                title="Series"
+                max={20}
+                items={tvItems.map(
+                  (s): PosterRowItem => ({
+                    id: s.id,
+                    title: s.name,
+                    poster: tmdbImage(s.poster_path, 'w342') ?? '',
+                    posterPath: s.poster_path ?? undefined,
+                    type: 'tv'
+                  })
+                )}
+              />
+            ) : null}
+            {peopleItems.length > 0 ? (
+              <ScrollSection title="People">
+                {peopleItems.slice(0, 20).map((p) => (
+                  <CastCard
+                    key={p.id}
+                    personId={p.id}
+                    name={p.name ?? ''}
+                    character={p.known_for_department ?? ''}
+                    profilePath={p.profile_path ?? null}
+                  />
+                ))}
+              </ScrollSection>
+            ) : null}
+            {userItems.length > 0 ? (
+              <ScrollSection title="Users">
+                {userItems.map((u) => (
+                  <UserCard
+                    key={u._id}
+                    user={u}
+                    onClick={() => {
+                      void recordHistory({
+                        kind: 'user',
+                        username: u.username,
+                        title: u.displayName,
+                        subtitle: `@${u.username}`,
+                        avatarUrl: u.avatarUrl
+                      })
+                      navigate({
+                        to: '/user/$username',
+                        params: { username: u.username },
+                        viewTransition: false
+                      })
+                    }}
+                  />
+                ))}
+              </ScrollSection>
+            ) : null}
+          </div>
+        )}
+      </SkeletonSwap>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useQuery as useTanstackQuery } from '@tanstack/react-query'
 import { useMutation, useQuery as useConvexQuery } from 'convex/react'
 import { SearchInput } from '@renderer/components/ui/search-input'
+import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
 import { Avatar } from '@renderer/components/ui/avatar'
 import { CloseIcon, CmdIcon, ReturnIcon, SearchIcon } from '@renderer/components/icons'
 import { isMac } from '@renderer/lib/platform'
@@ -20,7 +21,6 @@ import { api } from '@convex/_generated/api'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 
 const DEBOUNCE_MS = 150
-const SKELETON_DELAY_MS = 200
 
 type Row =
   | { kind: 'recent'; id: string; data: Doc<'searchHistory'> }
@@ -167,8 +167,6 @@ const SearchBody = memo(function SearchBody({
     setHighlight(-1)
   }, [debounced, isTyping])
 
-  const isLoading = isTyping && multi.isPending
-  const showSkeleton = useDelayed(isLoading, SKELETON_DELAY_MS)
   const showNoResults = isTyping && !multi.isPending && rows.length === 0 && users?.length === 0
 
   const openRow = async (row: Row): Promise<void> => {
@@ -269,71 +267,79 @@ const SearchBody = memo(function SearchBody({
         }}
       />
     )
-  } else if (showSkeleton) {
-    body = <SkeletonState />
-  } else if (showNoResults) {
-    body = <NoResultsState query={debounced} />
   } else {
     body = (
-      <div className="scroll-hide flex min-h-0 flex-col overflow-y-auto">
-        {movies.length > 0 ? (
-          <Section title="Movies">
-            {movies.map((row) => (
-              <ResultRow
-                key={row.id}
-                item={row.data}
-                {...rowProps(row)}
-                onClick={() => openRow(row)}
-              />
-            ))}
-          </Section>
-        ) : null}
-        {tv.length > 0 ? (
-          <>
-            <Divider />
-            <Section title="Series">
-              {tv.map((row) => (
-                <ResultRow
-                  key={row.id}
-                  item={row.data}
-                  {...rowProps(row)}
-                  onClick={() => openRow(row)}
-                />
-              ))}
-            </Section>
-          </>
-        ) : null}
-        {people.length > 0 ? (
-          <>
-            <Divider />
-            <Section title="People">
-              {people.map((row) => (
-                <PersonRow
-                  key={row.id}
-                  item={row.data}
-                  {...rowProps(row)}
-                  onClick={() => openRow(row)}
-                />
-              ))}
-            </Section>
-          </>
-        ) : null}
-        {userRows.length > 0 ? (
-          <>
-            <Divider />
-            <Section title="Users">
-              {userRows.map((row) => (
-                <UserRow
-                  key={row.id}
-                  item={row.data}
-                  {...rowProps(row)}
-                  onClick={() => openRow(row)}
-                />
-              ))}
-            </Section>
-          </>
-        ) : null}
-      </div>
+      <SkeletonSwap
+        ready={!multi.isPending}
+        reserve="auto"
+        label="Search results"
+        skeleton={<SkeletonState />}
+        className="scroll-hide min-h-0 overflow-y-auto overscroll-contain"
+      >
+        {showNoResults ? (
+          <NoResultsState query={debounced} />
+        ) : (
+          <div className="flex flex-col">
+            {movies.length > 0 ? (
+              <Section title="Movies">
+                {movies.map((row) => (
+                  <ResultRow
+                    key={row.id}
+                    item={row.data}
+                    {...rowProps(row)}
+                    onClick={() => openRow(row)}
+                  />
+                ))}
+              </Section>
+            ) : null}
+            {tv.length > 0 ? (
+              <>
+                <Divider />
+                <Section title="Series">
+                  {tv.map((row) => (
+                    <ResultRow
+                      key={row.id}
+                      item={row.data}
+                      {...rowProps(row)}
+                      onClick={() => openRow(row)}
+                    />
+                  ))}
+                </Section>
+              </>
+            ) : null}
+            {people.length > 0 ? (
+              <>
+                <Divider />
+                <Section title="People">
+                  {people.map((row) => (
+                    <PersonRow
+                      key={row.id}
+                      item={row.data}
+                      {...rowProps(row)}
+                      onClick={() => openRow(row)}
+                    />
+                  ))}
+                </Section>
+              </>
+            ) : null}
+            {userRows.length > 0 ? (
+              <>
+                <Divider />
+                <Section title="Users">
+                  {userRows.map((row) => (
+                    <UserRow
+                      key={row.id}
+                      item={row.data}
+                      {...rowProps(row)}
+                      onClick={() => openRow(row)}
+                    />
+                  ))}
+                </Section>
+              </>
+            ) : null}
+          </div>
+        )}
+      </SkeletonSwap>
     )
   }
 
@@ -667,19 +673,6 @@ function useDebouncedValue<T>(value: T, ms: number): T {
     return () => window.clearTimeout(id)
   }, [value, ms])
   return debounced
-}
-
-function useDelayed(active: boolean, ms: number): boolean {
-  const [shown, setShown] = useState(false)
-  useEffect(() => {
-    if (!active) {
-      setShown(false)
-      return
-    }
-    const id = window.setTimeout(() => setShown(true), ms)
-    return () => window.clearTimeout(id)
-  }, [active, ms])
-  return shown
 }
 
 type NavFn = ReturnType<typeof useNavigate>

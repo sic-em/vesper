@@ -9,6 +9,7 @@ import { StreamPicker } from '@renderer/components/player/stream-picker'
 import { formatTimeLeft } from '@renderer/lib/next-episode'
 import { api } from '@convex/_generated/api'
 import { Skeleton } from '@renderer/components/ui/skeleton'
+import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
 import { movieDetailsQuery } from '@renderer/lib/tmdb-queries'
 import {
   fanartMovieQuery,
@@ -140,8 +141,6 @@ function FeaturedSlide({ movieId }: { movieId: number }): React.JSX.Element {
   const navigate = useNavigate()
   const progress = useConvexQuery(api.playback.getForTitle, imdbId ? { imdbId } : 'skip')
 
-  if (!details.data) return <HeroSkeleton />
-
   const resume =
     progress && progress.durationSec > 0 && progress.positionSec / progress.durationSec < 0.95
       ? {
@@ -157,13 +156,20 @@ function FeaturedSlide({ movieId }: { movieId: number }): React.JSX.Element {
   }
 
   return (
-    <>
-      <Hero
-        {...detailsToHero(details.data, fanartLogo, ratings.data ?? null)}
-        onPlay={handlePlay}
-        resume={resume}
-      />
-      {imdbId ? (
+    <SkeletonSwap
+      ready={details.data !== undefined}
+      reserve="auto"
+      label="Featured movie"
+      skeleton={<HeroSkeleton />}
+    >
+      {details.data ? (
+        <Hero
+          {...detailsToHero(details.data, fanartLogo, ratings.data ?? null)}
+          onPlay={handlePlay}
+          resume={resume}
+        />
+      ) : null}
+      {details.data && imdbId ? (
         <StreamPicker
           open={pickerOpen}
           onOpenChange={setPickerOpen}
@@ -187,7 +193,7 @@ function FeaturedSlide({ movieId }: { movieId: number }): React.JSX.Element {
           }}
         />
       ) : null}
-    </>
+    </SkeletonSwap>
   )
 }
 
