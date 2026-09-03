@@ -7,6 +7,8 @@ import { LeftSidebar } from '@renderer/components/layout/left-sidebar'
 import { RightSidebar } from '@renderer/components/layout/right-sidebar'
 import { popularMoviesQuery, trendingTvQuery } from '@renderer/lib/tmdb-queries'
 import { usePersistedState } from '@renderer/hooks/use-persisted-state'
+import { ScrollContainerContext } from '@renderer/lib/scroll-container'
+import { cn } from '@renderer/lib/cn'
 
 interface ShellLayout {
   leftWidth: number
@@ -231,8 +233,16 @@ function AuthedLayout(): React.JSX.Element {
           </Allotment.Pane>
           <Allotment.Pane priority={LayoutPriority.High}>
             <main className="h-full min-w-0 overflow-hidden rounded-lg bg-surface">
-              <div ref={scrollRef} className="scroll-hide h-full overflow-y-auto">
-                <Outlet />
+              <div
+                ref={scrollRef}
+                className={cn(
+                  'h-full overflow-y-auto',
+                  pathname !== '/explore' && 'scroll-hide'
+                )}
+              >
+                <ScrollContainerContext.Provider value={scrollRef}>
+                  <Outlet />
+                </ScrollContainerContext.Provider>
               </div>
             </main>
           </Allotment.Pane>

@@ -17,6 +17,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedSearchRouteImport } from './routes/_authenticated/search'
 import { Route as AuthenticatedFriendsRouteImport } from './routes/_authenticated/friends'
+import { Route as AuthenticatedExploreRouteImport } from './routes/_authenticated/explore'
 import { Route as AuthenticatedComingSoonRouteImport } from './routes/_authenticated/coming-soon'
 import { Route as AuthenticatedChangelogRouteImport } from './routes/_authenticated/changelog'
 import { Route as AuthenticatedUserUsernameRouteImport } from './routes/_authenticated/user.$username'
@@ -63,6 +64,11 @@ const AuthenticatedSearchRoute = AuthenticatedSearchRouteImport.update({
 const AuthenticatedFriendsRoute = AuthenticatedFriendsRouteImport.update({
   id: '/friends',
   path: '/friends',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedExploreRoute = AuthenticatedExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedComingSoonRoute = AuthenticatedComingSoonRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/changelog': typeof AuthenticatedChangelogRoute
   '/coming-soon': typeof AuthenticatedComingSoonRoute
+  '/explore': typeof AuthenticatedExploreRoute
   '/friends': typeof AuthenticatedFriendsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/changelog': typeof AuthenticatedChangelogRoute
   '/coming-soon': typeof AuthenticatedComingSoonRoute
+  '/explore': typeof AuthenticatedExploreRoute
   '/friends': typeof AuthenticatedFriendsRoute
   '/search': typeof AuthenticatedSearchRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/_authenticated/changelog': typeof AuthenticatedChangelogRoute
   '/_authenticated/coming-soon': typeof AuthenticatedComingSoonRoute
+  '/_authenticated/explore': typeof AuthenticatedExploreRoute
   '/_authenticated/friends': typeof AuthenticatedFriendsRoute
   '/_authenticated/search': typeof AuthenticatedSearchRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/changelog'
     | '/coming-soon'
+    | '/explore'
     | '/friends'
     | '/search'
     | '/settings'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/changelog'
     | '/coming-soon'
+    | '/explore'
     | '/friends'
     | '/search'
     | '/settings'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/_authenticated/changelog'
     | '/_authenticated/coming-soon'
+    | '/_authenticated/explore'
     | '/_authenticated/friends'
     | '/_authenticated/search'
     | '/_authenticated/settings'
@@ -281,6 +293,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFriendsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/explore': {
+      id: '/_authenticated/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof AuthenticatedExploreRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/coming-soon': {
       id: '/_authenticated/coming-soon'
       path: '/coming-soon'
@@ -343,6 +362,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedChangelogRoute: typeof AuthenticatedChangelogRoute
   AuthenticatedComingSoonRoute: typeof AuthenticatedComingSoonRoute
+  AuthenticatedExploreRoute: typeof AuthenticatedExploreRoute
   AuthenticatedFriendsRoute: typeof AuthenticatedFriendsRoute
   AuthenticatedSearchRoute: typeof AuthenticatedSearchRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -358,6 +378,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChangelogRoute: AuthenticatedChangelogRoute,
   AuthenticatedComingSoonRoute: AuthenticatedComingSoonRoute,
+  AuthenticatedExploreRoute: AuthenticatedExploreRoute,
   AuthenticatedFriendsRoute: AuthenticatedFriendsRoute,
   AuthenticatedSearchRoute: AuthenticatedSearchRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

@@ -90,6 +90,17 @@ export function SkeletonSwap({
               }
         }
         transition={reduced ? { duration: 0 } : CROSSFADE}
+        onAnimationComplete={() => {
+          // Once content has settled, drop the leftover blur(0px)/scale(1) inline styles.
+          // They are visually inert but keep the whole subtree promoted to its own
+          // compositing layer, which makes scrolling large bodies (e.g. endless grids)
+          // needlessly expensive.
+          const el = body.current
+          if (!el || showSkeleton) return
+          el.style.filter = ''
+          el.style.transform = ''
+          el.style.willChange = ''
+        }}
         style={{
           transformOrigin: 'top left',
           pointerEvents: showSkeleton ? 'none' : undefined

@@ -5,6 +5,7 @@ import { UserMenu } from '@renderer/components/layout/user-menu'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  CompassIcon,
   HomeIcon,
   SidebarLeftIcon,
   UserGroupIcon,
@@ -17,6 +18,7 @@ import { isMac, isWindows } from '@renderer/lib/platform'
 import { useNavState } from '@renderer/lib/use-nav-state'
 
 const BUTTON = 32 // IconButton size="md"
+const EXPLORE_BUTTON = 48 // matches the search input's h-12
 const GAP = 8 // nav gap-2
 const MAC_TRAFFIC_LIGHTS = 78
 const NAV_MARGIN = isWindows ? 16 : 24 // ml-4 / ml-6
@@ -49,7 +51,8 @@ export function TopBar({
 
   // The search bar is centred on the whole window, independent of the side panes. It only
   // moves when the window itself is too narrow to keep it clear of the nav cluster on the left
-  // or the account/window controls on the right.
+  // or the account/window controls on the right. The explore button rides along in the same
+  // group, so the pair centres as one unit.
   const navButtons = 3 + (leftCollapsed ? 1 : 0)
   const navEnd =
     (isMac ? MAC_TRAFFIC_LIGHTS : 0) + NAV_MARGIN + navButtons * BUTTON + (navButtons - 1) * GAP
@@ -60,7 +63,7 @@ export function TopBar({
     BUTTON -
     (rightCollapsed ? BUTTON + GAP : 0)
   const available = rightStart - navEnd - 2 * SEARCH_GUTTER
-  const searchWidth = Math.max(0, Math.min(SEARCH_MAX, available))
+  const searchWidth = Math.max(0, Math.min(SEARCH_MAX + EXPLORE_BUTTON + GAP, available))
   const idealLeft = (winWidth - searchWidth) / 2
   const minLeft = navEnd + SEARCH_GUTTER
   const maxLeft = rightStart - SEARCH_GUTTER - searchWidth
@@ -112,10 +115,20 @@ export function TopBar({
       </nav>
 
       <div
-        className="app-no-drag absolute top-0 bottom-0 left-0 flex items-center pt-[5.2px]"
+        className="app-no-drag absolute top-0 bottom-0 left-0 flex items-center gap-2 pt-[5.2px]"
         style={{ width: searchWidth, transform: `translateX(${searchLeft}px)` }}
       >
-        <SearchControl />
+        <div className="min-w-0 flex-1">
+          <SearchControl />
+        </div>
+        <IconButton
+          variant="ink"
+          aria-label="Explore"
+          onClick={() => navigate({ to: '/explore' })}
+          className="size-12 rounded-xl bg-surface-2"
+        >
+          <CompassIcon className="size-[22px]" />
+        </IconButton>
       </div>
 
       <div className="app-no-drag ml-auto flex shrink-0 items-center gap-2 pr-2.5">

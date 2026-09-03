@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Select as BaseSelect } from '@base-ui/react/select'
 import { cn } from '@renderer/lib/cn'
 import { squircleStyle } from '@renderer/components/ui/squircle-surface'
@@ -5,6 +6,7 @@ import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 export interface SelectOption {
   value: string
   label: string
+  icon?: ReactNode
 }
 
 interface Props {
@@ -34,7 +36,20 @@ export function Select({
         <BaseSelect.Value>
           {(v) => {
             const key = Array.isArray(v) ? v[0] : v
-            return options.find((o) => o.value === key)?.label ?? '—'
+            const opt = options.find((o) => o.value === key)
+            return (
+              <span className="flex min-w-0 items-center gap-2">
+                {opt?.icon ? (
+                  <span
+                    className="grid size-3.5 shrink-0 place-items-center [&_svg]:size-full"
+                    aria-hidden
+                  >
+                    {opt.icon}
+                  </span>
+                ) : null}
+                <span className="truncate">{opt?.label ?? '—'}</span>
+              </span>
+            )
           }}
         </BaseSelect.Value>
         <BaseSelect.Icon>
@@ -62,8 +77,18 @@ export function Select({
                     'flex items-center justify-between gap-2 rounded-lg bg-transparent px-3 py-2 text-[14px] leading-5 font-medium text-white outline-none select-none data-[highlighted]:bg-white/[0.08]'
                   )}
                 >
-                  <span className="flex-1 truncate">
-                    <BaseSelect.ItemText>{o.label}</BaseSelect.ItemText>
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    {o.icon ? (
+                      <span
+                        className="grid size-4 shrink-0 place-items-center text-white/80 [&_svg]:size-full"
+                        aria-hidden
+                      >
+                        {o.icon}
+                      </span>
+                    ) : null}
+                    <span className="truncate">
+                      <BaseSelect.ItemText>{o.label}</BaseSelect.ItemText>
+                    </span>
                   </span>
                   <BaseSelect.ItemIndicator className="grid size-4 shrink-0 place-items-center">
                     <CheckMark />

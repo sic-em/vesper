@@ -1,4 +1,4 @@
-import { queryOptions } from '@tanstack/react-query'
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query'
 import {
   tmdb,
   type TmdbList,
@@ -158,6 +158,102 @@ export const genreMoviesQuery = (genre: GenreKey) =>
       }),
     staleTime: 6 * 60 * 60_000
   })
+
+export interface ExploreGenre {
+  id: number
+  label: string
+}
+
+export const EXPLORE_MOVIE_GENRES: ExploreGenre[] = [
+  { id: 28, label: 'Action' },
+  { id: 12, label: 'Adventure' },
+  { id: 16, label: 'Animation' },
+  { id: 35, label: 'Comedy' },
+  { id: 80, label: 'Crime' },
+  { id: 99, label: 'Documentary' },
+  { id: 18, label: 'Drama' },
+  { id: 10751, label: 'Family' },
+  { id: 14, label: 'Fantasy' },
+  { id: 36, label: 'History' },
+  { id: 27, label: 'Horror' },
+  { id: 10402, label: 'Music' },
+  { id: 9648, label: 'Mystery' },
+  { id: 10749, label: 'Romance' },
+  { id: 878, label: 'Sci-Fi' },
+  { id: 53, label: 'Thriller' },
+  { id: 10752, label: 'War' },
+  { id: 37, label: 'Western' }
+]
+
+export const EXPLORE_TV_GENRES: ExploreGenre[] = [
+  { id: 10759, label: 'Action & Adventure' },
+  { id: 16, label: 'Animation' },
+  { id: 35, label: 'Comedy' },
+  { id: 80, label: 'Crime' },
+  { id: 99, label: 'Documentary' },
+  { id: 18, label: 'Drama' },
+  { id: 10751, label: 'Family' },
+  { id: 10762, label: 'Kids' },
+  { id: 9648, label: 'Mystery' },
+  { id: 10764, label: 'Reality' },
+  { id: 10765, label: 'Sci-Fi & Fantasy' },
+  { id: 10768, label: 'War & Politics' },
+  { id: 37, label: 'Western' }
+]
+
+export const EXPLORE_SORTS = [
+  { value: 'popular', label: 'Popular' },
+  { value: 'top-rated', label: 'Top rated' },
+  { value: 'newest', label: 'New releases' }
+] as const
+
+export type ExploreSort = (typeof EXPLORE_SORTS)[number]['value']
+
+const TMDB_MAX_PAGE = 500
+// TMDB pages are a fixed 20 items, so each logical "load more" fetches a batch of
+// pages in parallel and flattens them into one 60-item step.
+const EXPLORE_BATCH = 3
+
+export const discoverInfiniteQuery = (type: 'movie' | 'tv', sort: ExploreSort, genres: number[]) => {
+  const dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date'
+  const today = new Date().toISOString().slice(0, 10)
+  const params: Record<string, string | number | boolean> = { include_adult: false }
+  if (genres.length > 0) params.with_genres = genres.join(',')
+  if (sort === 'popular') {
+    params.sort_by = 'popularity.desc'
+  } else if (sort === 'top-rated') {
+    params.sort_by = 'vote_average.desc'
+    params['vote_count.gte'] = 200
+  } else {
+    params.sort_by = `${dateField}.desc`
+    params[`${dateField}.lte`] = today
+    params['vote_count.gte'] = 20
+  }
+  return infiniteQueryOptions({
+    queryKey: ['tmdb', 'discover', type, 'explore', `batch${EXPLORE_BATCH}`, sort, genres.join(',')],
+    queryFn: async ({ pageParam }): Promise<TmdbList<TmdbMovie | TmdbShow>> => {
+      const first = (pageParam - 1) * EXPLORE_BATCH + 1
+      const pages = await Promise.all(
+        Array.from({ length: EXPLORE_BATCH }, (_, i) => first + i)
+          .filter((p) => p <= TMDB_MAX_PAGE)
+          .map((p) => tmdb<TmdbList<TmdbMovie | TmdbShow>>(`/discover/${type}`, { ...params, page: p }))
+      )
+      const head = pages[0]
+      return {
+        page: pageParam,
+        total_pages: head?.total_pages ?? 0,
+        total_results: head?.total_results ?? 0,
+        results: pages.flatMap((p) => p.results)
+      }
+    },
+    initialPageParam: 1,
+    getNextPageParam: (last) => {
+      const maxPage = Math.min(last.total_pages, TMDB_MAX_PAGE)
+      return last.page * EXPLORE_BATCH < maxPage ? last.page + 1 : undefined
+    },
+    staleTime: 30 * 60_000
+  })
+}
 
 export const tvDetailsQuery = (id: number) =>
   queryOptions({

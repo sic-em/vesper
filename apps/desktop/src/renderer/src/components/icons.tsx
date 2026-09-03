@@ -153,6 +153,17 @@ export const HomeIcon = (props: IconProps): React.JSX.Element => (
   </svg>
 )
 
+export const CompassIcon = (props: IconProps): React.JSX.Element => (
+  <svg {...base} {...props}>
+    <path
+      fillRule="evenodd"
+      clipRule="evenodd"
+      d="M2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12ZM14.5892 8.48917C15.1491 8.33648 15.6628 8.85021 15.5101 9.41008L14.3907 13.5146C14.2742 13.9416 13.9407 14.2752 13.5136 14.3917L9.4091 15.5111C8.84923 15.6638 8.3355 15.1501 8.48819 14.5902L9.60761 10.4856C9.72407 10.0586 10.0577 9.72505 10.4847 9.60859L14.5892 8.48917Z"
+      fill="currentColor"
+    />
+  </svg>
+)
+
 export const HeartIcon = (props: IconProps): React.JSX.Element => (
   <svg {...base} {...props}>
     <path
