@@ -334,7 +334,10 @@ app.whenReady().then(() => {
         'https://*.download.real-debrid.com/*',
         'https://*.elfhosted.cc/*',
         'https://*.strem.fun/*',
-        'https://comet.vespr.dev/*'
+        'https://comet.vespr.dev/*',
+        'https://*.midnightignite.me/*',
+        'https://sooti.click/*',
+        'https://*.sooti.click/*'
       ]
     },
     (details, callback) => {
