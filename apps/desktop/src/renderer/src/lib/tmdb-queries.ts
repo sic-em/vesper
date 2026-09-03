@@ -214,6 +214,9 @@ const TMDB_MAX_PAGE = 500
 // pages in parallel and flattens them into one 60-item step.
 const EXPLORE_BATCH = 3
 
+/** How many cards the first batch renders — the skeleton grid reserves exactly this many. */
+export const EXPLORE_PAGE_SIZE = EXPLORE_BATCH * 20
+
 export const discoverInfiniteQuery = (type: 'movie' | 'tv', sort: ExploreSort, genres: number[]) => {
   const dateField = type === 'movie' ? 'primary_release_date' : 'first_air_date'
   const today = new Date().toISOString().slice(0, 10)
