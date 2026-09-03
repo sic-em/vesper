@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { memo, useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useMutation, useQuery } from 'convex/react'
 import { Link, useMatch } from '@tanstack/react-router'
 import { AnimatePresence, m as motion, Reorder, useReducedMotion } from 'motion/react'
@@ -150,7 +150,11 @@ function DragSection({
   )
 }
 
-export function LeftSidebar({ onCollapse }: { onCollapse: () => void }): React.JSX.Element {
+export const LeftSidebar = memo(function LeftSidebar({
+  onCollapse
+}: {
+  onCollapse: () => void
+}): React.JSX.Element {
   const lists = useQuery(api.lists.myLists) ?? []
   const [newListOpen, setNewListOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
@@ -286,4 +290,4 @@ export function LeftSidebar({ onCollapse }: { onCollapse: () => void }): React.J
       <FeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} />
     </aside>
   )
-}
+})

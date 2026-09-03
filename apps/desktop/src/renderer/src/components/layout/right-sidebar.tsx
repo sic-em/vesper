@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useQuery } from 'convex/react'
 import { useNavigate } from '@tanstack/react-router'
 import { IconButton } from '@renderer/components/ui/icon-button'
@@ -13,7 +14,11 @@ import type { FunctionReturnType } from 'convex/server'
 
 type ActivityRow = FunctionReturnType<typeof api.friendships.listActivity>[number]
 
-export function RightSidebar({ onCollapse }: { onCollapse: () => void }): React.JSX.Element {
+export const RightSidebar = memo(function RightSidebar({
+  onCollapse
+}: {
+  onCollapse: () => void
+}): React.JSX.Element {
   const navigate = useNavigate()
   const rows = useQuery(api.friendships.listActivity)
 
@@ -49,7 +54,7 @@ export function RightSidebar({ onCollapse }: { onCollapse: () => void }): React.
       </div>
     </aside>
   )
-}
+})
 
 function ActivityRow({
   row,

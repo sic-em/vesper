@@ -16,17 +16,18 @@ import { useNavigate } from '@tanstack/react-router'
 import { isMac, isWindows } from '@renderer/lib/platform'
 import { useNavState } from '@renderer/lib/use-nav-state'
 
-const SHELL_PAD = 8 // root .px-2
-const NAV_RESERVE_MAC = 78 + 24 + 4 * 32 + 3 * 8 + 16
-const NAV_RESERVE_WIN = 16 + 3 * 32 + 2 * 8 + 8 // ml-4 + 3 buttons + gaps + final pad
+const BUTTON = 32 // IconButton size="md"
+const GAP = 8 // nav gap-2
+const MAC_TRAFFIC_LIGHTS = 78
+const NAV_MARGIN = isWindows ? 16 : 24 // ml-4 / ml-6
+const RIGHT_PAD = 10 // pr-2.5
 const SEARCH_MAX = 560
+const SEARCH_GUTTER = 16 // minimum breathing room between the search bar and its neighbours
 const WIN_CONTROLS_WIDTH = 138 // 3 buttons × 46
 
 export interface TopBarProps {
   leftCollapsed: boolean
   rightCollapsed: boolean
-  leftWidth: number
-  rightWidth: number
   onExpandLeft: () => void
   onExpandRight: () => void
   minimal?: boolean
@@ -35,8 +36,6 @@ export interface TopBarProps {
 export function TopBar({
   leftCollapsed,
   rightCollapsed,
-  leftWidth,
-  rightWidth,
   onExpandLeft,
   onExpandRight,
   minimal = false
@@ -48,13 +47,23 @@ export function TopBar({
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const navReserve = isMac ? NAV_RESERVE_MAC : NAV_RESERVE_WIN
-  const leftEff = leftCollapsed ? 0 : leftWidth
-  const rightEff = rightCollapsed ? 0 : rightWidth
-  const rightReserve = isWindows ? WIN_CONTROLS_WIDTH : 0
-  const idealLeft = leftEff + (winWidth - leftEff - rightEff - SEARCH_MAX) / 2
-  const minLeft = Math.max(navReserve, SHELL_PAD + leftEff)
-  const maxLeft = winWidth - SHELL_PAD - rightEff - rightReserve - SEARCH_MAX
+  // The search bar is centred on the whole window, independent of the side panes. It only
+  // moves when the window itself is too narrow to keep it clear of the nav cluster on the left
+  // or the account/window controls on the right.
+  const navButtons = 3 + (leftCollapsed ? 1 : 0)
+  const navEnd =
+    (isMac ? MAC_TRAFFIC_LIGHTS : 0) + NAV_MARGIN + navButtons * BUTTON + (navButtons - 1) * GAP
+  const rightStart =
+    winWidth -
+    (isWindows ? WIN_CONTROLS_WIDTH : 0) -
+    RIGHT_PAD -
+    BUTTON -
+    (rightCollapsed ? BUTTON + GAP : 0)
+  const available = rightStart - navEnd - 2 * SEARCH_GUTTER
+  const searchWidth = Math.max(0, Math.min(SEARCH_MAX, available))
+  const idealLeft = (winWidth - searchWidth) / 2
+  const minLeft = navEnd + SEARCH_GUTTER
+  const maxLeft = rightStart - SEARCH_GUTTER - searchWidth
   const searchLeft = Math.max(minLeft, Math.min(idealLeft, maxLeft))
   const navigate = useNavigate()
   const nav = useNavState()
@@ -104,7 +113,7 @@ export function TopBar({
 
       <div
         className="app-no-drag absolute top-0 bottom-0 left-0 flex items-center pt-[5.2px]"
-        style={{ width: SEARCH_MAX, transform: `translateX(${searchLeft}px)` }}
+        style={{ width: searchWidth, transform: `translateX(${searchLeft}px)` }}
       >
         <SearchControl />
       </div>

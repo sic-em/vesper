@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createFileRoute, Outlet, redirect, useRouterState } from '@tanstack/react-router'
 import { Allotment, LayoutPriority, type AllotmentHandle } from 'allotment'
 import 'allotment/dist/style.css'
@@ -52,18 +52,25 @@ export const Route = createFileRoute('/_authenticated')({
 
 function AuthedLayout(): React.JSX.Element {
   const [layout, setLayout] = usePersistedState<ShellLayout>('vesper.layout.shell', INITIAL)
+  const layoutRef = useRef(layout)
+  useEffect(() => {
+    layoutRef.current = layout
+  }, [layout])
   const allotmentRef = useRef<AllotmentHandle>(null)
   const initialLeft = layout.leftVisible ? layout.leftWidth : 0
   const initialRight = layout.rightVisible ? layout.rightWidth : 0
-  const [liveLeft, setLiveLeft] = useState(initialLeft)
-  const [liveRight, setLiveRight] = useState(initialRight)
+  // Only the collapsed/expanded booleans are React state. Pane widths change on every frame of
+  // a drag or a collapse tween and nothing in the tree needs to re-render for them.
+  const [leftCollapsed, setLeftCollapsed] = useState(initialLeft === 0)
+  const [rightCollapsed, setRightCollapsed] = useState(initialRight === 0)
   const initialTotal =
     typeof window !== 'undefined' ? Math.max(800, window.innerWidth - SHELL_PAD) : 1440
-  const sizesRef = useRef<number[]>([
+  const [defaultSizes] = useState<number[]>(() => [
     initialLeft,
     Math.max(0, initialTotal - initialLeft - initialRight),
     initialRight
   ])
+  const sizesRef = useRef<number[]>(defaultSizes)
   const animatingRef = useRef(false)
   const rafRef = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -73,7 +80,13 @@ function AuthedLayout(): React.JSX.Element {
     scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' })
   }, [pathname])
 
-  const tween = (target: number[], onDone?: () => void): void => {
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  const tween = useCallback((target: number[], onDone?: () => void): void => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
     animatingRef.current = true
     const start = sizesRef.current.slice()
@@ -93,29 +106,31 @@ function AuthedLayout(): React.JSX.Element {
       }
     }
     rafRef.current = requestAnimationFrame(step)
+  }, [])
+
+  const target = (l: number, r: number): number[] => {
+    const total = sizesRef.current.reduce((a, b) => a + b, 0)
+    return [l, Math.max(0, total - l - r), r]
   }
 
-  const total = (): number => sizesRef.current.reduce((a, b) => a + b, 0)
-  const target = (l: number, r: number): number[] => [l, Math.max(0, total() - l - r), r]
-
-  const collapseLeft = (): void => {
+  const collapseLeft = useCallback((): void => {
     tween(target(0, sizesRef.current[2] ?? 0), () => {
       setLayout((p) => ({ ...p, leftVisible: false }))
     })
-  }
-  const expandLeft = (): void => {
+  }, [tween, setLayout])
+  const expandLeft = useCallback((): void => {
     setLayout((p) => ({ ...p, leftVisible: true }))
-    tween(target(layout.leftWidth || LEFT_DEFAULT, sizesRef.current[2] ?? 0))
-  }
-  const collapseRight = (): void => {
+    tween(target(layoutRef.current.leftWidth || LEFT_DEFAULT, sizesRef.current[2] ?? 0))
+  }, [tween, setLayout])
+  const collapseRight = useCallback((): void => {
     tween(target(sizesRef.current[0] ?? 0, 0), () => {
       setLayout((p) => ({ ...p, rightVisible: false }))
     })
-  }
-  const expandRight = (): void => {
+  }, [tween, setLayout])
+  const expandRight = useCallback((): void => {
     setLayout((p) => ({ ...p, rightVisible: true }))
-    tween(target(sizesRef.current[0] ?? 0, layout.rightWidth || RIGHT_DEFAULT))
-  }
+    tween(target(sizesRef.current[0] ?? 0, layoutRef.current.rightWidth || RIGHT_DEFAULT))
+  }, [tween, setLayout])
 
   const handleChange = (sizes: number[]): void => {
     let next = sizes
@@ -141,8 +156,9 @@ function AuthedLayout(): React.JSX.Element {
     }
     sizesRef.current = next
     const [l, , r] = next
-    if (l !== undefined) setLiveLeft(l)
-    if (r !== undefined) setLiveRight(r)
+    // Same-value updates bail out in React, so these are free on frames where nothing crossed 0.
+    if (l !== undefined) setLeftCollapsed(l === 0)
+    if (r !== undefined) setRightCollapsed(r === 0)
     if (animatingRef.current) return
     setLayout((p) => ({
       ...p,
@@ -156,10 +172,8 @@ function AuthedLayout(): React.JSX.Element {
   return (
     <div className="flex h-full flex-col bg-bg">
       <TopBar
-        leftCollapsed={liveLeft === 0}
-        rightCollapsed={liveRight === 0}
-        leftWidth={liveLeft}
-        rightWidth={liveRight}
+        leftCollapsed={leftCollapsed}
+        rightCollapsed={rightCollapsed}
         onExpandLeft={expandLeft}
         onExpandRight={expandRight}
       />
@@ -169,7 +183,7 @@ function AuthedLayout(): React.JSX.Element {
           proportionalLayout={false}
           separator={false}
           onChange={handleChange}
-          defaultSizes={sizesRef.current}
+          defaultSizes={defaultSizes}
         >
           <Allotment.Pane minSize={0} maxSize={LEFT_MAX} preferredSize={LEFT_DEFAULT} snap>
             <div className="h-full overflow-hidden pr-1.5">

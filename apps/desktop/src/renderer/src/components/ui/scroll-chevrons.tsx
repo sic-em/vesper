@@ -105,7 +105,7 @@ export function ScrollChevrons({ scrollRef }: Props): React.JSX.Element {
   }, [endPress])
 
   const base = cn(
-    'absolute top-1/2 z-10 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white opacity-0 backdrop-blur-md transition-opacity duration-150 group-hover:opacity-100 active:scale-95'
+    'absolute top-1/2 z-10 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-hover:backdrop-blur-md active:scale-95'
   )
 
   return (
