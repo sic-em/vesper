@@ -40,6 +40,30 @@ function readCacheLimitFile(): number {
   return CACHE_LIMIT_DEFAULT_BYTES
 }
 
+const ZOOM_STEP_FILE = join(app.getPath('userData'), 'zoom-step')
+// Zoom levels the user steps through with Ctrl/Cmd +/-, as multipliers of the
+// display-derived base zoom. Ctrl/Cmd 0 returns to ZOOM_BASE_STEP.
+const ZOOM_STEPS = [0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.4, 1.6]
+const ZOOM_BASE_STEP = 3
+
+function readZoomStep(): number {
+  try {
+    const n = parseInt(readFileSync(ZOOM_STEP_FILE, 'utf8').trim(), 10)
+    if (Number.isInteger(n) && n >= 0 && n < ZOOM_STEPS.length) return n
+  } catch {
+    /* missing or invalid */
+  }
+  return ZOOM_BASE_STEP
+}
+
+function writeZoomStep(step: number): void {
+  try {
+    writeFileSync(ZOOM_STEP_FILE, String(step))
+  } catch {
+    /* the level still applies to this session, it just will not survive a restart */
+  }
+}
+
 const APPLIED_CACHE_LIMIT_BYTES = readCacheLimitFile()
 app.commandLine.appendSwitch('disk-cache-size', String(APPLIED_CACHE_LIMIT_BYTES))
 
@@ -291,10 +315,20 @@ function createWindow(): BrowserWindow {
   const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, raw))
   const autoZoom = Math.round(clamped * 20) / 20
 
+  let zoomStep = readZoomStep()
+  const applyZoom = (): void => {
+    mainWindow.webContents.setZoomFactor(autoZoom * ZOOM_STEPS[zoomStep])
+  }
+  const stepZoom = (next: number): void => {
+    const clamped = Math.min(ZOOM_STEPS.length - 1, Math.max(0, next))
+    if (clamped === zoomStep) return
+    zoomStep = clamped
+    applyZoom()
+    writeZoomStep(zoomStep)
+  }
+
   mainWindow.webContents.setVisualZoomLevelLimits(1, 1)
-  mainWindow.webContents.on('did-finish-load', () => {
-    mainWindow.webContents.setZoomFactor(autoZoom)
-  })
+  mainWindow.webContents.on('did-finish-load', applyZoom)
 
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.type !== 'keyDown') return
@@ -306,9 +340,15 @@ function createWindow(): BrowserWindow {
     }
     const mod = process.platform === 'darwin' ? input.meta : input.control
     if (!mod) return
-    if (['=', '+', '-', '_', '0'].includes(input.key)) {
+    if (input.key === '=' || input.key === '+') {
       event.preventDefault()
-      mainWindow.webContents.setZoomFactor(autoZoom)
+      stepZoom(zoomStep + 1)
+    } else if (input.key === '-' || input.key === '_') {
+      event.preventDefault()
+      stepZoom(zoomStep - 1)
+    } else if (input.key === '0') {
+      event.preventDefault()
+      stepZoom(ZOOM_BASE_STEP)
     }
   })
 
