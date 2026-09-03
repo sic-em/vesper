@@ -12,7 +12,7 @@ import { Agentation } from 'agentation'
 import { router, queryClient } from './router'
 import { queryPersister } from './lib/query-persister'
 import { Heartbeat } from './lib/presence'
-import { TooltipProvider } from './components/ui/tooltip'
+import { TooltipGroup } from './components/ui/tooltip'
 import { mountOpenUrlHandler, flushPendingDeepLink } from './lib/open-url-mount'
 import { convexClient as convex } from './lib/convex-client'
 
@@ -69,9 +69,9 @@ function App(): React.JSX.Element | null {
   return (
     <LazyMotion features={domAnimation}>
       {auth.isAuthenticated ? <Heartbeat /> : null}
-      <TooltipProvider delay={400}>
+      <TooltipGroup openDelay={400}>
         <RouterProvider router={router} context={{ queryClient, auth }} />
-      </TooltipProvider>
+      </TooltipGroup>
     </LazyMotion>
   )
 }
