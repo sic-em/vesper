@@ -7,6 +7,7 @@ import { LeftSidebar } from '@renderer/components/layout/left-sidebar'
 import { RightSidebar } from '@renderer/components/layout/right-sidebar'
 import { popularMoviesQuery, trendingTvQuery } from '@renderer/lib/tmdb-queries'
 import { usePersistedState } from '@renderer/hooks/use-persisted-state'
+import { useSmoothScroll } from '@renderer/hooks/use-smooth-scroll'
 import { ScrollContainerContext } from '@renderer/lib/scroll-container'
 import { cn } from '@renderer/lib/cn'
 
@@ -99,13 +100,19 @@ function AuthedLayout(): React.JSX.Element {
   const animatingRef = useRef(false)
   const rafRef = useRef<number | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const scrollContentRef = useRef<HTMLDivElement>(null)
   const leftInnerRef = useRef<HTMLDivElement>(null)
   const rightInnerRef = useRef<HTMLDivElement>(null)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
+  const smoothScroll = pathname === '/' || pathname === '/explore'
+  const lenisRef = useSmoothScroll(scrollRef, scrollContentRef, smoothScroll)
+
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' })
-  }, [pathname])
+    // Lenis keeps its own scroll target; jumping the element directly would snap back.
+    if (lenisRef.current) lenisRef.current.scrollTo(0, { immediate: true })
+    else scrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [pathname, lenisRef])
 
   useEffect(() => {
     return () => {
@@ -235,14 +242,13 @@ function AuthedLayout(): React.JSX.Element {
             <main className="h-full min-w-0 overflow-hidden rounded-lg bg-surface">
               <div
                 ref={scrollRef}
-                className={cn(
-                  'h-full overflow-y-auto',
-                  pathname !== '/explore' && 'scroll-hide'
-                )}
+                className={cn('h-full overflow-y-auto', pathname !== '/explore' && 'scroll-hide')}
               >
-                <ScrollContainerContext.Provider value={scrollRef}>
-                  <Outlet />
-                </ScrollContainerContext.Provider>
+                <div ref={scrollContentRef}>
+                  <ScrollContainerContext.Provider value={scrollRef}>
+                    <Outlet />
+                  </ScrollContainerContext.Provider>
+                </div>
               </div>
             </main>
           </Allotment.Pane>
