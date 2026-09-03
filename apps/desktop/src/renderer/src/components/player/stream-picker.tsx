@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, m as motion, useReducedMotion } from 'motion/react'
 import { CloseIcon } from '@renderer/components/icons'
 import { Ring } from '@renderer/components/ui/spinner'
+import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
 import { cn } from '@renderer/lib/cn'
 import { fetchMovieStreams, fetchSeriesStreams, type ParsedStream } from '@renderer/lib/streams'
 
@@ -135,30 +136,41 @@ function PickerBody(props: StreamPickerProps): React.JSX.Element {
         className="flex min-h-0 flex-1 flex-col border border-white/[0.05] bg-surface"
         style={squircleStyle('inset')}
       >
-        <div className="scroll-hide flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 py-1.5">
-          {streamsQuery.isLoading
-            ? Array.from({ length: 12 }).map((_, i) => <SkeletonRow key={i} />)
-            : null}
-          {streamsQuery.isError ? (
-            <p className="px-3 py-6 text-center text-[13px] text-text-muted">
-              Failed to load streams.
-            </p>
-          ) : null}
-          {!streamsQuery.isLoading && !streamsQuery.isError && sorted.length === 0 ? (
-            <p className="px-3 py-6 text-center text-[13px] text-text-muted">No streams found.</p>
-          ) : null}
-          <AnimatePresence initial={false} mode="popLayout">
-            {sorted.map((s) => (
-              <Row
-                key={s.playbackHash}
-                stream={s}
-                selected={s.playbackHash === selectedId}
-                busy={resolving && s.playbackHash === selectedId}
-                onClick={() => void handlePick(s)}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
+        <SkeletonSwap
+          ready={!streamsQuery.isLoading}
+          reserve="auto"
+          label="Sources"
+          className="scroll-hide min-h-0 flex-1 overflow-y-auto overscroll-contain px-1.5 py-1.5"
+          skeleton={
+            <div className="flex flex-col gap-0.5">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <SkeletonRow key={i} />
+              ))}
+            </div>
+          }
+        >
+          <div className="flex flex-col gap-0.5">
+            {streamsQuery.isError ? (
+              <p className="px-3 py-6 text-center text-[13px] text-text-muted">
+                Failed to load streams.
+              </p>
+            ) : null}
+            {!streamsQuery.isLoading && !streamsQuery.isError && sorted.length === 0 ? (
+              <p className="px-3 py-6 text-center text-[13px] text-text-muted">No streams found.</p>
+            ) : null}
+            <AnimatePresence initial={false} mode="popLayout">
+              {sorted.map((s) => (
+                <Row
+                  key={s.playbackHash}
+                  stream={s}
+                  selected={s.playbackHash === selectedId}
+                  busy={resolving && s.playbackHash === selectedId}
+                  onClick={() => void handlePick(s)}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        </SkeletonSwap>
       </div>
     </div>
   )
