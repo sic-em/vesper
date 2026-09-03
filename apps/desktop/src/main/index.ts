@@ -1,10 +1,8 @@
 import { app, shell, BrowserWindow, ipcMain, session, screen, clipboard, dialog } from 'electron'
-import { join, basename } from 'path'
+import { join, basename, resolve } from 'path'
 import { promises as fsp, readFileSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import windowStateKeeper from 'electron-window-state'
-import icon from '../../resources/icon.png?asset'
-import iconMac from '../../resources/icon-mac.png?asset'
 import { setDiscordActivity, clearDiscordActivity, disconnectDiscord } from './discord'
 import { registerUpdater } from './updater'
 import { startRendererServer, stopRendererServer, rendererBaseUrl } from './renderer-server'
@@ -13,6 +11,12 @@ import {
   openInExternalPlayer,
   type ExternalPlayerId
 } from './external-players'
+import {
+  applyAppIcon,
+  currentIconVariant,
+  registerIconVariants,
+  windowIconImage
+} from './icon-variants'
 
 app.commandLine.appendSwitch('enable-features', 'PlatformHEVCDecoderSupport')
 
@@ -35,7 +39,7 @@ const APPLIED_CACHE_LIMIT_BYTES = readCacheLimitFile()
 app.commandLine.appendSwitch('disk-cache-size', String(APPLIED_CACHE_LIMIT_BYTES))
 
 if (process.platform === 'darwin' && app.dock) {
-  app.dock.setIcon(iconMac)
+  applyAppIcon(currentIconVariant(), null)
 }
 
 const PROTOCOL = 'vesper'
@@ -128,9 +132,7 @@ app.on('open-url', (event, url) => {
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [
-      require('path').resolve(process.argv[1]!)
-    ])
+    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [resolve(process.argv[1]!)])
   }
 } else {
   app.setAsDefaultProtocolClient(PROTOCOL)
@@ -223,7 +225,7 @@ function createWindow(): BrowserWindow {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     trafficLightPosition: { x: 18, y: 15 },
     frame: process.platform === 'win32' ? false : undefined,
-    ...(process.platform !== 'darwin' ? { icon } : {}),
+    ...(process.platform !== 'darwin' ? { icon: windowIconImage() } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -327,7 +329,7 @@ app.whenReady().then(() => {
         'https://*.download.real-debrid.com/*',
         'https://*.elfhosted.cc/*',
         'https://*.strem.fun/*',
-        'https://comet.vespr.dev/*',
+        'https://comet.vespr.dev/*'
       ]
     },
     (details, callback) => {
@@ -365,6 +367,8 @@ app.whenReady().then(() => {
   })
 
   ipcMain.on('ping', () => console.log('pong'))
+
+  registerIconVariants(() => mainWindowRef)
 
   ipcMain.handle(
     'subtitles:pickFile',

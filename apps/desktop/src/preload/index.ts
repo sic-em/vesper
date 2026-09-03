@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
-import type { VesperApi } from './index.d'
+import type { IconVariantId, VesperApi } from './index.d'
 
 const api = {
   window: {
@@ -59,6 +59,10 @@ const api = {
       >,
     open: (id: 'vlc' | 'iina' | 'mpv', url: string, positionSec: number) =>
       ipcRenderer.invoke('externalPlayer:open', id, url, positionSec) as Promise<void>
+  },
+  appIcon: {
+    getVariant: () => ipcRenderer.invoke('appIcon:getVariant') as Promise<IconVariantId>,
+    setVariant: (id: IconVariantId) => ipcRenderer.invoke('appIcon:setVariant', id) as Promise<void>
   },
   onOpenUrl: (cb: (route: string) => void): (() => void) => {
     const listener = (_e: unknown, route: string): void => cb(route)
