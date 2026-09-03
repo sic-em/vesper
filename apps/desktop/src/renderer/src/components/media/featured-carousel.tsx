@@ -4,7 +4,7 @@ import Autoplay from 'embla-carousel-autoplay'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useQuery as useConvexQuery } from 'convex/react'
 import { useNavigate } from '@tanstack/react-router'
-import { Hero, type HeroProps } from './hero'
+import { Hero, HERO_HEIGHT, type HeroProps } from './hero'
 import { StreamPicker } from '@renderer/components/player/stream-picker'
 import { formatTimeLeft } from '@renderer/lib/next-episode'
 import { api } from '@convex/_generated/api'
@@ -226,7 +226,7 @@ function detailsToHero(
 
 function HeroSkeleton(): React.JSX.Element {
   return (
-    <div className="relative h-[420px] w-full overflow-hidden rounded-lg bg-surface">
+    <div className={cn('relative w-full overflow-hidden rounded-lg bg-surface', HERO_HEIGHT)}>
       <div className="flex h-full flex-col justify-end gap-3 p-8">
         <Skeleton className="h-[110px] w-[300px]" />
         <Skeleton className="h-4 w-40" />

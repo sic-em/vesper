@@ -35,6 +35,9 @@ export interface HeroProps {
   resume?: { label: string; percent: number } | null
 }
 
+/** Shared with the skeleton so the swap doesn't jump. */
+export const HERO_HEIGHT = 'h-[clamp(420px,58vh,620px)]'
+
 export function Hero({
   title,
   logo,
@@ -62,7 +65,10 @@ export function Hero({
   const [overviewOpen, setOverviewOpen] = useState(false)
   return (
     <section
-      className="relative flex h-[420px] w-full shrink-0 overflow-hidden rounded-lg bg-surface"
+      className={cn(
+        'relative flex w-full shrink-0 overflow-hidden rounded-lg bg-surface',
+        HERO_HEIGHT
+      )}
       aria-label={title}
     >
       <div
