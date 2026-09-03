@@ -5,7 +5,7 @@ import { useVirtualizer } from '@tanstack/react-virtual'
 import { Button as BaseButton } from '@base-ui/react/button'
 import { Segmented } from '@renderer/components/ui/segmented'
 import { Select } from '@renderer/components/ui/select'
-import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
+import { Skeleton } from '@renderer/components/ui/skeleton'
 import { LoadMore } from '@renderer/components/ui/load-more'
 import { genreIcon } from '@renderer/components/explore-icons'
 import { usePreloadRoute } from '@renderer/lib/use-preload-route'
@@ -13,6 +13,7 @@ import { useScrollContainer } from '@renderer/lib/scroll-container'
 import {
   discoverInfiniteQuery,
   EXPLORE_MOVIE_GENRES,
+  EXPLORE_PAGE_SIZE,
   EXPLORE_SORTS,
   EXPLORE_TV_GENRES,
   type ExploreSort
@@ -138,36 +139,30 @@ function ExplorePage(): React.JSX.Element {
         </div>
       </header>
 
-      <SkeletonSwap
-        ready={!query.isPending}
-        reserve="auto"
-        label="Explore results"
-        skeleton={<SkeletonGrid />}
-      >
-        {items.length === 0 && !query.isPending ? (
-          <EmptyResults
-            hasFilters={genre !== undefined}
-            onClear={() => patchSearch({ genre: undefined })}
+      {query.isPending ? (
+        <SkeletonGrid />
+      ) : items.length === 0 ? (
+        <EmptyResults
+          hasFilters={genre !== undefined}
+          onClear={() => patchSearch({ genre: undefined })}
+        />
+      ) : (
+        <div className="flex flex-col gap-6">
+          <VirtualGrid items={items} type={type} />
+          <LoadMore
+            hasMore={query.hasNextPage}
+            onLoad={() => query.fetchNextPage()}
+            rootMargin="1500px 0px"
+            className="py-2"
           />
-        ) : (
-          <div className="flex flex-col gap-6">
-            <VirtualGrid items={items} type={type} />
-            {items.length > 0 ? (
-              <LoadMore
-                hasMore={query.hasNextPage}
-                onLoad={() => query.fetchNextPage()}
-                rootMargin="1500px 0px"
-                className="py-2"
-              />
-            ) : null}
-          </div>
-        )}
-      </SkeletonSwap>
+        </div>
+      )}
     </div>
   )
 }
 
-// Mirrors the skeleton's auto-fill grid: as many 140px-minimum columns as fit, 16px gaps.
+// Shared by the grid and its skeleton so both lay out identically: as many
+// CARD_MIN_WIDTH columns as fit, GRID_GAP between them.
 const CARD_MIN_WIDTH = 140
 const GRID_GAP = 16
 const POSTER_RATIO = 3 / 2
@@ -296,11 +291,21 @@ const ExploreCard = memo(function ExploreCard({
   )
 })
 
+// One tile per card in the first batch, on the same track sizing as VirtualGrid, so the
+// grid keeps its height and column width when the real cards take over.
 function SkeletonGrid(): React.JSX.Element {
   return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
-      {Array.from({ length: 18 }).map((_, i) => (
-        <div key={i} className="aspect-[2/3] w-full animate-pulse rounded-xl bg-surface-2" />
+    <div
+      aria-busy
+      aria-label="Loading results"
+      className="grid"
+      style={{
+        gap: GRID_GAP,
+        gridTemplateColumns: `repeat(auto-fill, minmax(${CARD_MIN_WIDTH}px, 1fr))`
+      }}
+    >
+      {Array.from({ length: EXPLORE_PAGE_SIZE }).map((_, i) => (
+        <Skeleton key={i} className="aspect-[2/3] w-full rounded-xl" />
       ))}
     </div>
   )
