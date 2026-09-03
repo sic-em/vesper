@@ -93,11 +93,7 @@ function MoviePage(): React.JSX.Element {
 
   const fanartLogo = pickFanartLogo(fanart.data?.hdmovielogo ?? fanart.data?.movielogo ?? undefined)
   const trailers = pickPlayableVideos(details.data.videos?.results ?? [])
-  const topTrailer = trailers.find((v) => v.type === 'Trailer') ?? trailers[0]
-  const heroProps = {
-    ...detailsToHero(details.data, fanartLogo, ratings.data ?? null),
-    trailerKey: topTrailer?.key
-  }
+  const heroProps = detailsToHero(details.data, fanartLogo, ratings.data ?? null)
   const cast = details.data.credits?.cast.slice(0, 12) ?? []
   const recs: PosterRowItem[] =
     details.data.recommendations?.results.map((m) => ({
