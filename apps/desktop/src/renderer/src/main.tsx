@@ -18,8 +18,24 @@ import { convexClient as convex } from './lib/convex-client'
 
 mountOpenUrlHandler()
 
-const CACHE_BUSTER = 'v2'
+const CACHE_BUSTER = 'v3'
 const CACHE_MAX_AGE = 7 * 24 * 60 * 60_000
+
+// The persister re-serializes the whole dehydrated cache on every (throttled) save, on the
+// main thread. Persisting every success let the blob grow to hundreds of MB — a 1-2s freeze
+// per navigation. Big regenerable payloads stay memory-only: detail pages (details carries
+// appended credits/videos/recommendations/images), endless explore batches, searches, per-title
+// stream lists (whose links expire anyway).
+const NEVER_PERSIST = new Set([
+  'details',
+  'explore',
+  'search',
+  'season',
+  'combined_credits',
+  'recommendations',
+  'similar',
+  'streams'
+])
 
 function App(): React.JSX.Element | null {
   const auth = useConvexAuth()
@@ -70,7 +86,9 @@ createRoot(document.getElementById('root')!).render(
           maxAge: CACHE_MAX_AGE,
           buster: CACHE_BUSTER,
           dehydrateOptions: {
-            shouldDehydrateQuery: (q) => q.state.status === 'success'
+            shouldDehydrateQuery: (q) =>
+              q.state.status === 'success' &&
+              !q.queryKey.some((part) => typeof part === 'string' && NEVER_PERSIST.has(part))
           }
         }}
       >
