@@ -5,5 +5,6 @@ export {
   SparklesIcon,
   BugIcon,
   BroomSparkleIcon,
+  TrashCanIcon,
   By
 } from './components'

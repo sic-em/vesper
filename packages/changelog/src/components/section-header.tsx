@@ -68,6 +68,19 @@ export function BugIcon(): React.JSX.Element {
   )
 }
 
+export function TrashCanIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={ICON_SIZE}>
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8.12616 5H3C2.72386 5 2.5 5.22386 2.5 5.5C2.5 5.77614 2.72386 6 3 6H3.99998C3.99999 6.01066 4.00034 6.0214 4.00104 6.03219L4.94068 20.5966C4.9916 21.3859 5.64663 22 6.43756 22H17.5624C18.3534 22 19.0084 21.3859 19.0593 20.5966L19.999 6.03219C19.9997 6.0214 20 6.01066 20 6H21C21.2761 6 21.5 5.77614 21.5 5.5C21.5 5.22386 21.2761 5 21 5H15.8739C15.4297 3.27471 13.8641 2 12 2C10.1359 2 8.57039 3.27471 8.12616 5ZM9.17058 5H14.8295C14.4177 3.83486 13.306 3 12 3C10.6941 3 9.58233 3.83486 9.17058 5Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}
+
 export function BroomSparkleIcon(): React.JSX.Element {
   return (
     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={ICON_SIZE}>
