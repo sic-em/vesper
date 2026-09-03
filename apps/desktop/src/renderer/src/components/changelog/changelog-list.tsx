@@ -4,13 +4,15 @@ import {
   SectionHeader,
   SparklesIcon,
   BugIcon,
-  BroomSparkleIcon
+  BroomSparkleIcon,
+  TrashCanIcon
 } from '@vesper/changelog'
 
 const SECTION_ICONS: Record<string, React.ReactNode> = {
   New: <SparklesIcon />,
   Improvements: <BroomSparkleIcon />,
-  Fixes: <BugIcon />
+  Fixes: <BugIcon />,
+  Removed: <TrashCanIcon />
 }
 
 const dateFmt = new Intl.DateTimeFormat('en-US', {

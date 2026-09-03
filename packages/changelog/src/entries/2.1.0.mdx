@@ -1,0 +1,30 @@
+import { By } from '../components/credits'
+
+## New
+
+- Vesper has an Explore page. Browse movies and series in one endless grid, narrow it down by genre, and flip between popular, top rated, and new releases. The compass next to search takes you there. <By u="sic-em" pr={28} />
+- Pick your own app icon. **Settings → Appearance** has seven variants — Popcorn, Hidden Leaf, Akatsuki, Soda, 3D, Super Saiyan, and Ramen. Your pick lands on the window, the taskbar, and the Dock. <By u="sic-em" pr={29} />
+- Wheel scrolling on Home and Explore glides now instead of stepping. <By u="sic-em" pr={32} />
+
+## Improvements
+
+- Opening a movie or show no longer freezes the app for a few seconds. A cache that had quietly grown to hundreds of megabytes was being rewritten on every page change; it now keeps only what's worth keeping, and clicking into a title lands in a fraction of a second. <By u="sic-em" pr={32} />
+- Explore only renders the cards on screen and homepage rows mount as you scroll toward them, so page switches stay instant even after a long browsing session. <By u="sic-em" pr={32} />
+- Homepage scrolling and the side panels stopped dropping frames — route preloading stays off scroll frames, and the panels no longer stutter through their first few toggles. <By u="sic-em" pr={25} />
+- Loading looks calmer. Skeletons appear only when a load is actually slow, never just blink, and crossfade into the content when it arrives. <By u="sic-em" pr={26} />
+- The top bar, user menu, and friends page use outlined icons throughout, so the chrome reads as one style. <By u="sic-em" pr={31} />
+
+## Fixes
+
+- The window controls sit inset from the edge with round hover targets, instead of full-bleed slabs that ran into the corner. <By u="sic-em" pr={27} />
+- Sidebar text no longer squishes and re-wraps while a panel collapses — it slides out with the panel. <By u="sic-em" pr={27} />
+
+## Removed
+
+- Autoplay next episode is gone: the up-next countdown, the "still watching?" check, and the setting. Moving between episodes is a deliberate act now, and next and previous still work from the player. <By u="sic-em" pr={30} />
+- The media hero no longer swaps to an autoplaying trailer after five seconds. It stays on the backdrop; trailers are one click away in the videos section. <By u="sic-em" pr={31} />
+- Right-click menus are off the browsing cards. They stay on Continue Watching, where remove and mark-as-watched actually earn their place. <By u="sic-em" pr={32} />
+
+---
+
+Got an idea, or did something break? Tell us about it. Click **Feedback** at the bottom of the sidebar, it goes straight to us.
