@@ -20,6 +20,11 @@ import {
 
 app.commandLine.appendSwitch('enable-features', 'PlatformHEVCDecoderSupport')
 
+// Opt-in DevTools protocol endpoint for profiling: VESPER_CDP=<port> pnpm dev
+if (!app.isPackaged && process.env['VESPER_CDP']) {
+  app.commandLine.appendSwitch('remote-debugging-port', process.env['VESPER_CDP'])
+}
+
 const CACHE_LIMIT_DEFAULT_BYTES = 8 * 1024 * 1024 * 1024
 const CACHE_LIMIT_MIN_BYTES = 4 * 1024 * 1024 * 1024
 const CACHE_LIMIT_FILE = join(app.getPath('userData'), 'cache-limit')
