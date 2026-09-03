@@ -17,29 +17,17 @@ import { PlayerToast } from '@renderer/components/player/player-toast'
 import { KeyboardShortcutsModal } from '@renderer/components/player/keyboard-shortcuts-modal'
 import { SkipSegmentButton } from '@renderer/components/player/skip-segment-button'
 import { PipPlaceholder } from '@renderer/components/player/pip-placeholder'
-import { UpNextCard, type UpNextMode } from '@renderer/components/player/up-next-card'
 import {
   readPlaybackSpeed,
   writePlaybackSpeed,
   readSkipButtonsEnabled,
-  readAutoplayNextEnabled,
   readPipMinimizeEnabled
 } from '@renderer/lib/player-prefs'
 import {
-  autoAdvancesBeforePrompt,
-  autoChainCount,
-  autoplayMarks,
-  noteAutoAdvance,
-  resetAutoChain
-} from '@renderer/lib/autoplay'
-import {
-  formatEpisodeLabel,
-  hasAired,
   nextEpisodeCursor,
   previousEpisodeCursor,
   resolveEpisodeWatch,
-  type EpisodeCursor,
-  type EpisodeWatchSearch
+  type EpisodeCursor
 } from '@renderer/lib/play-episode'
 import { segmentsQuery, type IntroDbSegment } from '@renderer/lib/introdb'
 import {
@@ -180,7 +168,7 @@ function WatchPage(): React.JSX.Element {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [reloadNonce, setReloadNonce] = useState(0)
   // Keyed to the stream it was captured on: a resume point from a reload must not follow the
-  // viewer into the next episode when autoplay swaps the url underneath.
+  // viewer into the next episode when navigation swaps the url underneath.
   const reloadResumeRef = useRef<{ url: string; sec: number } | null>(null)
   // Where embedded subtitle loading should (re)start reading — updated on every seek.
   const [subReload, setSubReload] = useState<{ key: string; sec: number } | null>(null)
@@ -995,24 +983,15 @@ function WatchPage(): React.JSX.Element {
     return eps.find((e) => e.episode_number === nextCursor.episode) ?? null
   }, [nextCursor, nextSeasonQuery.data])
 
-  const [launching, setLaunching] = useState(false)
   const launchingRef = useRef(false)
-
-  // The up-next card is a promise that the next episode is ready, so it should be. Held as the
-  // in-flight promise rather than its result: pressing "Play now" while the preload is still
-  // running then joins the work already happening instead of starting a second, identical
-  // resolve and waiting on the slower of the two. Keyed by episode so a preload can never be
-  // handed to a different one than it was made for.
-  const preloadRef = useRef<{ key: string; promise: Promise<EpisodeWatchSearch> } | null>(null)
 
   // Every way into another episode resolves a stream and lands in the player. Sending the viewer
   // back to the show page instead — which is what the next button used to do — reads as a dead
   // button: the page highlights the episode and nothing plays.
   const playEpisode = useCallback(
-    async (cursor: EpisodeCursor, opts: { auto: boolean; name?: string | null }): Promise<void> => {
+    async (cursor: EpisodeCursor, opts: { name?: string | null }): Promise<void> => {
       if (launchingRef.current) return
       launchingRef.current = true
-      setLaunching(true)
       const resolveArgs = {
         tvTmdbId: tmdbId,
         imdbId: search.imdbId,
@@ -1022,16 +1001,8 @@ function WatchPage(): React.JSX.Element {
         episodeName: opts.name,
         bingeGroup: search.bingeGroup
       }
-      const cursorKey = `${search.imdbId}:${cursor.season}:${cursor.episode}`
-      const preloaded = preloadRef.current?.key === cursorKey ? preloadRef.current.promise : null
       try {
-        // A preload that failed must not condemn the launch — the link may simply have gone stale
-        // while it sat, and resolving again picks the next candidate.
-        const nextSearch = preloaded
-          ? await preloaded.catch(() => resolveEpisodeWatch(resolveArgs))
-          : await resolveEpisodeWatch(resolveArgs)
-        if (opts.auto) noteAutoAdvance(search.imdbId)
-        else resetAutoChain()
+        const nextSearch = await resolveEpisodeWatch(resolveArgs)
         void navigate({
           to: '/watch/$mediaType/$id',
           params: { mediaType: 'tv', id: String(params.id) },
@@ -1042,7 +1013,6 @@ function WatchPage(): React.JSX.Element {
         flashToast('Could not start that episode')
       } finally {
         launchingRef.current = false
-        setLaunching(false)
       }
     },
     [tmdbId, search.imdbId, search.title, search.bingeGroup, params.id, navigate, flashToast]
@@ -1055,132 +1025,11 @@ function WatchPage(): React.JSX.Element {
       : null
 
   const onPreviousEpisode = prevCursor
-    ? () => void playEpisode(prevCursor, { auto: false, name: prevEpisodeName })
+    ? () => void playEpisode(prevCursor, { name: prevEpisodeName })
     : null
   const onNextEpisode = nextCursor
-    ? () => void playEpisode(nextCursor, { auto: false, name: nextEpisodeRecord?.name })
+    ? () => void playEpisode(nextCursor, { name: nextEpisodeRecord?.name })
     : null
-
-  // ── Autoplay ────────────────────────────────────────────────────────────────────────────────
-  const [autoplayEnabled] = useState(() => readAutoplayNextEnabled())
-  const [upNextDismissedKey, setUpNextDismissedKey] = useState<string | null>(null)
-
-  const marks = useMemo(
-    () => autoplayMarks({ durationSec: duration, outroStartSec: segments?.outro?.start_sec }),
-    [duration, segments]
-  )
-
-  // Navigation is asynchronous, so for a moment after a rollover the route already points at the
-  // new episode while the engine is still loading it. Arming autoplay on anything less than "the
-  // engine is playing the stream this route is about" rolls straight over the episode it just
-  // started — one skip lands on two.
-  const engineOnCurrentStream = engine.loadedUrl !== null && engine.loadedUrl === playUrl
-
-  const upNextReady =
-    autoplayEnabled &&
-    engineOnCurrentStream &&
-    marks !== null &&
-    nextCursor !== null &&
-    hasAired(nextEpisodeRecord) &&
-    upNextDismissedKey !== episodeKey
-
-  const upNextVisible = upNextReady && marks !== null && timePos >= marks.cardAtSec
-
-  // Read at render rather than held in state: the chain lives outside this component so it can
-  // survive the remount between episodes, and only its value at the credits actually matters.
-  const upNextMode: UpNextMode =
-    autoChainCount(search.imdbId) >= autoAdvancesBeforePrompt(duration)
-      ? 'still-watching'
-      : 'countdown'
-
-  const secondsToAdvance = marks ? Math.max(0, Math.ceil(marks.advanceAtSec - timePos)) : 0
-
-  // The preload belongs to the episode it was made during. Landing on a new one drops it, so a
-  // resolve made for a chain the viewer has since left cannot be spent later.
-  useEffect(() => {
-    preloadRef.current = null
-  }, [episodeKey])
-
-  // Once the card is up, resolve the next episode in full rather than only warming its scrape.
-  // The card is on screen for the length of the credits, which is far longer than a resolve takes,
-  // so the whole wait can be spent while the viewer is still watching something. By the time the
-  // countdown ends — or they press play — the stream is a value already in hand.
-  useEffect(() => {
-    if (!upNextVisible || !nextCursor) return
-    const key = `${search.imdbId}:${nextCursor.season}:${nextCursor.episode}`
-    if (preloadRef.current?.key === key) return
-    const promise = resolveEpisodeWatch({
-      tvTmdbId: tmdbId,
-      imdbId: search.imdbId,
-      showTitle: search.title,
-      season: nextCursor.season,
-      episode: nextCursor.episode,
-      episodeName: nextEpisodeRecord?.name,
-      bingeGroup: search.bingeGroup
-    })
-    // Attached here so a rejection is never an unhandled one; the launch does its own retry.
-    promise.catch(() => {})
-    preloadRef.current = { key, promise }
-  }, [
-    upNextVisible,
-    nextCursor,
-    search.imdbId,
-    search.title,
-    search.bingeGroup,
-    tmdbId,
-    nextEpisodeRecord
-  ])
-
-  // The rollover is scheduled rather than polled, so it lands on the mark instead of on whichever
-  // time update happens to cross it — and pausing during the credits calls the whole thing off
-  // until playback resumes.
-  useEffect(() => {
-    if (!upNextVisible || upNextMode !== 'countdown') return
-    if (!nextCursor || !marks) return
-    if (paused && !engine.ended) return
-    const delayMs = engine.ended ? 0 : Math.max(0, (marks.advanceAtSec - timePos) * 1000)
-    const timer = setTimeout(() => {
-      void playEpisode(nextCursor, { auto: true, name: nextEpisodeRecord?.name })
-    }, delayMs)
-    return () => clearTimeout(timer)
-  }, [
-    upNextVisible,
-    upNextMode,
-    nextCursor,
-    marks,
-    paused,
-    engine.ended,
-    timePos,
-    nextEpisodeRecord,
-    playEpisode
-  ])
-
-  // Deliberate input means someone is there, so the chain starts over. Mouse movement is
-  // deliberately not counted — a nudged desk should not answer the question on the viewer's behalf.
-  useEffect(() => {
-    const onInput = (): void => resetAutoChain()
-    window.addEventListener('keydown', onInput)
-    window.addEventListener('pointerdown', onInput)
-    return () => {
-      window.removeEventListener('keydown', onInput)
-      window.removeEventListener('pointerdown', onInput)
-    }
-  }, [])
-
-  // Picture-in-picture mirrors the canvas, not the DOM, so the card asking whether anyone is still
-  // there would be invisible in the floating window. Playback is about to stop; hand the picture
-  // back to the main window first so the reason is on screen. Latched, because the hook hands back
-  // a fresh object every render and toggling twice would put the picture straight back.
-  const leftPipToAskRef = useRef(false)
-  useEffect(() => {
-    if (!upNextVisible || upNextMode !== 'still-watching') {
-      leftPipToAskRef.current = false
-      return
-    }
-    if (!pip.active || leftPipToAskRef.current) return
-    leftPipToAskRef.current = true
-    void pip.toggle()
-  }, [upNextVisible, upNextMode, pip])
 
   // ── Window during picture-in-picture ────────────────────────────────────────────────────────
   const [pipMinimizePref] = useState(() => readPipMinimizeEnabled())
@@ -1287,23 +1136,6 @@ function WatchPage(): React.JSX.Element {
           visible={!!activeSegment}
           label={activeSegment?.kind === 'recap' ? 'Skip recap' : 'Skip intro'}
           onSkip={() => activeSegment && handleSeekTo(activeSegment.end)}
-        />
-        <UpNextCard
-          visible={upNextVisible && !pip.active}
-          mode={upNextMode}
-          label={
-            nextCursor
-              ? formatEpisodeLabel(nextCursor.season, nextCursor.episode, nextEpisodeRecord?.name)
-              : ''
-          }
-          stillUrl={tmdbImage(nextEpisodeRecord?.still_path, 'w500')}
-          secondsLeft={secondsToAdvance}
-          loading={launching}
-          onPlay={() => {
-            if (nextCursor)
-              void playEpisode(nextCursor, { auto: false, name: nextEpisodeRecord?.name })
-          }}
-          onDismiss={() => setUpNextDismissedKey(episodeKey)}
         />
         <ChromeOverlay visible={chromeVisible || buffering}>
           <TopBar title={search.title} episodeLabel={search.episodeLabel} onBack={goBack} />

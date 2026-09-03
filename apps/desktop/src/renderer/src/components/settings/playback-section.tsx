@@ -11,8 +11,6 @@ import { readAudioPreferredLang, writeAudioLastLang } from '@renderer/lib/audio-
 import {
   readSkipButtonsEnabled,
   writeSkipButtonsEnabled,
-  readAutoplayNextEnabled,
-  writeAutoplayNextEnabled,
   readPipMinimizeEnabled,
   writePipMinimizeEnabled
 } from '@renderer/lib/player-prefs'
@@ -60,7 +58,6 @@ export function PlaybackSection(): React.JSX.Element {
   const [subLang, setSubLang] = useState(() => readSubLastLang() ?? 'en')
   const [autoShow, setAutoShow] = useState(() => readAutoShow())
   const [skipButtons, setSkipButtons] = useState(() => readSkipButtonsEnabled())
-  const [autoplayNext, setAutoplayNext] = useState(() => readAutoplayNextEnabled())
   const [pipMinimize, setPipMinimize] = useState(() => readPipMinimizeEnabled())
 
   const showHevcNotice = isWindows && !isHevcSupported()
@@ -119,15 +116,6 @@ export function PlaybackSection(): React.JSX.Element {
         onChange={(v) => {
           setSkipButtons(v)
           writeSkipButtonsEnabled(v)
-        }}
-      />
-      <ToggleRow
-        title="Autoplay next episode"
-        description="Roll into the next episode at the credits, and check in after a few unattended ones."
-        value={autoplayNext}
-        onChange={(v) => {
-          setAutoplayNext(v)
-          writeAutoplayNextEnabled(v)
         }}
       />
       <ToggleRow
