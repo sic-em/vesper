@@ -1,9 +1,12 @@
 import type { StreamSort } from './stream-picker'
+import { ANIME4K_DEFAULT_PRESET, ANIME4K_PRESETS, type Anime4kPreset } from './player/anime4k'
 
 const KEY_SPEED = 'vesper.player.speed'
 const KEY_SKIP_BUTTONS = 'vesper.player.skipButtons'
 const KEY_STREAM_SORT = 'vesper.player.streamSort'
 const KEY_PIP_MINIMIZE = 'vesper.player.pipMinimize'
+const KEY_ANIME4K = 'vesper.player.anime4k'
+const KEY_ANIME4K_PRESET = 'vesper.player.anime4kPreset'
 
 export const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
 export const DEFAULT_SPEED = 1
@@ -36,6 +39,25 @@ export function readPipMinimizeEnabled(): boolean {
 
 export function writePipMinimizeEnabled(enabled: boolean): void {
   localStorage.setItem(KEY_PIP_MINIMIZE, enabled ? '1' : '0')
+}
+
+export function readAnime4kEnabled(): boolean {
+  return localStorage.getItem(KEY_ANIME4K) === '1'
+}
+
+export function writeAnime4kEnabled(enabled: boolean): void {
+  localStorage.setItem(KEY_ANIME4K, enabled ? '1' : '0')
+}
+
+export function readAnime4kPreset(): Anime4kPreset {
+  const raw = localStorage.getItem(KEY_ANIME4K_PRESET)
+  return (ANIME4K_PRESETS as readonly string[]).includes(raw ?? '')
+    ? (raw as Anime4kPreset)
+    : ANIME4K_DEFAULT_PRESET
+}
+
+export function writeAnime4kPreset(preset: Anime4kPreset): void {
+  localStorage.setItem(KEY_ANIME4K_PRESET, preset)
 }
 
 export function readStreamSort(): StreamSort {

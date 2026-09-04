@@ -21,8 +21,14 @@ import {
   readPlaybackSpeed,
   writePlaybackSpeed,
   readSkipButtonsEnabled,
-  readPipMinimizeEnabled
+  readPipMinimizeEnabled,
+  readAnime4kEnabled,
+  writeAnime4kEnabled,
+  readAnime4kPreset,
+  writeAnime4kPreset
 } from '@renderer/lib/player-prefs'
+import { ANIME4K_PRESET_LABELS, type Anime4kPreset } from '@renderer/lib/player/anime4k'
+import { isDetectedAnime } from '@renderer/lib/anime'
 import {
   nextEpisodeCursor,
   previousEpisodeCursor,
@@ -163,6 +169,11 @@ function WatchPage(): React.JSX.Element {
   const offsetWriteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [statsVisible, setStatsVisible] = useState(false)
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(() => readPlaybackSpeed())
+  const [anime4kEnabled, setAnime4kEnabled] = useState(() => readAnime4kEnabled())
+  const [anime4kPreset, setAnime4kPreset] = useState<Anime4kPreset>(() => readAnime4kPreset())
+  // Explicit in-player Anime4K choice, keyed to the title so it clears on navigation to another
+  // show without a reset effect — episodes of the same show keep it.
+  const [anime4kChoice, setAnime4kChoice] = useState<{ key: number; on: boolean } | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -445,6 +456,26 @@ function WatchPage(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const handleSetAnime4k = useCallback(
+    (v: Anime4kPreset | 'off'): void => {
+      if (v === 'off') {
+        // One flag: Off in the player turns the feature off globally, not just here.
+        setAnime4kChoice({ key: tmdbId, on: false })
+        setAnime4kEnabled(false)
+        writeAnime4kEnabled(false)
+      } else {
+        // Enabling anywhere (anime or not) sets the remembered global toggle and applies now;
+        // auto-apply on future titles still only fires on detected anime.
+        setAnime4kChoice({ key: tmdbId, on: true })
+        setAnime4kEnabled(true)
+        writeAnime4kEnabled(true)
+        setAnime4kPreset(v)
+        writeAnime4kPreset(v)
+      }
+    },
+    [tmdbId]
+  )
+
   const handleScreenshot = useCallback(async (): Promise<void> => {
     const c = canvasRef.current
     if (!c || !c.width || !c.height) {
@@ -532,6 +563,28 @@ function WatchPage(): React.JSX.Element {
     ...fanartTvQuery(tvdbId),
     enabled: search.mediaType === 'tv' && tvdbId !== undefined
   })
+
+  const detectedAnime = isDetectedAnime(
+    search.mediaType === 'movie' ? movieDetails.data : tvDetails.data
+  )
+  const anime4kOn =
+    anime4kChoice?.key === tmdbId ? anime4kChoice.on : anime4kEnabled && detectedAnime
+
+  // Auto-apply is gated on Detected anime; an explicit in-player choice overrides for this title.
+  useEffect(() => {
+    if (!engine.loadedUrl) return
+    engine.controllerRef.current?.setAnime4k({ enabled: anime4kOn, preset: anime4kPreset })
+  }, [engine.loadedUrl, anime4kOn, anime4kPreset, engine.controllerRef])
+
+  // Step-downs are session-only and always announced — the saved preset is never rewritten.
+  useEffect(() => {
+    const c = engine.controllerRef.current
+    if (!engine.loadedUrl || !c) return
+    return c.on('anime4k', ({ droppedTo }) => {
+      if (droppedTo === 'off') flashToast('Anime4K turned off — playback was struggling')
+      else if (droppedTo) flashToast(`Anime4K stepped down to ${ANIME4K_PRESET_LABELS[droppedTo]}`)
+    })
+  }, [engine.loadedUrl, engine.controllerRef, flashToast])
 
   const backdropUrl = useMemo(() => {
     const path =
@@ -1224,6 +1277,9 @@ function WatchPage(): React.JSX.Element {
         onToggleStats={handleToggleStats}
         playbackSpeed={playbackSpeed}
         onSetSpeed={handleSetSpeed}
+        anime4kValue={anime4kOn ? anime4kPreset : 'off'}
+        anime4kStatus={engine.stats?.anime4k ?? null}
+        onSetAnime4k={handleSetAnime4k}
         onScreenshot={() => void handleScreenshot()}
         onReload={handleReloadStream}
         onShowShortcuts={handleShowShortcuts}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AnimatePresence, m as motion } from 'motion/react'
 import type { PlayerStats } from '@renderer/lib/player/types'
+import { anime4kStatusLabel } from '@renderer/lib/player/anime4k'
 import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface Props {
@@ -177,6 +178,7 @@ export function StatsForNerds({
           <Row label="Bitrate" value={fmtBitrate(s.videoBitrate)} />
           <Row label="FPS" value={String(s.fps)} />
           <Row label="Dropped" value={fmtDropped(s.droppedFrames, s.displayedFrames)} />
+          <Row label="Anime4K" value={anime4kStatusLabel(s.anime4k)} />
 
           <Section title="Audio" icon={<AudioIcon />} />
           <Row

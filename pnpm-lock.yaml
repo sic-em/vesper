@@ -102,6 +102,9 @@ importers:
       allotment:
         specifier: ^1.20.5
         version: 1.20.5(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      anime4k-webgpu:
+        specifier: ^1.0.0
+        version: 1.0.0(@webgpu/types@0.1.70)
       border-beam:
         specifier: ^1.0.1
         version: 1.0.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -2844,6 +2847,11 @@ packages:
     peerDependencies:
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  anime4k-webgpu@1.0.0:
+    resolution: {integrity: sha512-syZZyDRHYukFnDLxdES4AuMHzKwxlu5Lo52yhEEc1hwKQmvza8DGC62/VDPrrWOu4KArU5jh/0yFJQBwetGuxg==}
+    peerDependencies:
+      '@webgpu/types': ^0.1.38
 
   ansi-align@3.0.1:
     resolution: {integrity: sha512-IOfwwBF5iczOjp/WeY4YxyjqAFMQoZufdQWDd19SEExbVLNXqvpzSJ/M7Za4/sCPmQ0+GRquoA7bGcINcxew6w==}
@@ -9944,6 +9952,10 @@ snapshots:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
       usehooks-ts: 3.1.1(react@19.2.6)
+
+  anime4k-webgpu@1.0.0(@webgpu/types@0.1.70):
+    dependencies:
+      '@webgpu/types': 0.1.70
 
   ansi-align@3.0.1:
     dependencies:

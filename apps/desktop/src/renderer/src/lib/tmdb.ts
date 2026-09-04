@@ -52,6 +52,7 @@ export interface TmdbMovie {
   release_date: string
   vote_average: number
   genre_ids: number[]
+  original_language: string
   popularity?: number
   media_type?: 'movie'
 }
@@ -66,6 +67,7 @@ export interface TmdbShow {
   first_air_date: string
   vote_average: number
   genre_ids: number[]
+  original_language: string
   popularity?: number
   media_type?: 'tv'
 }

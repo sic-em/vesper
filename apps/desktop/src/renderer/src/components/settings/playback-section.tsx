@@ -12,8 +12,17 @@ import {
   readSkipButtonsEnabled,
   writeSkipButtonsEnabled,
   readPipMinimizeEnabled,
-  writePipMinimizeEnabled
+  writePipMinimizeEnabled,
+  readAnime4kEnabled,
+  writeAnime4kEnabled,
+  readAnime4kPreset,
+  writeAnime4kPreset
 } from '@renderer/lib/player-prefs'
+import {
+  ANIME4K_PRESETS,
+  ANIME4K_PRESET_LABELS,
+  type Anime4kPreset
+} from '@renderer/lib/player/anime4k'
 import { isHevcSupported, isWindows } from '@renderer/lib/platform'
 
 interface LangOption {
@@ -59,6 +68,8 @@ export function PlaybackSection(): React.JSX.Element {
   const [autoShow, setAutoShow] = useState(() => readAutoShow())
   const [skipButtons, setSkipButtons] = useState(() => readSkipButtonsEnabled())
   const [pipMinimize, setPipMinimize] = useState(() => readPipMinimizeEnabled())
+  const [anime4k, setAnime4k] = useState(() => readAnime4kEnabled())
+  const [anime4kPreset, setAnime4kPreset] = useState<Anime4kPreset>(() => readAnime4kPreset())
 
   const showHevcNotice = isWindows && !isHevcSupported()
 
@@ -118,6 +129,27 @@ export function PlaybackSection(): React.JSX.Element {
           writeSkipButtonsEnabled(v)
         }}
       />
+      <ToggleRow
+        title="Anime4K upscaling"
+        description="Sharpen and upscale low-resolution anime in real time. Turns on automatically for anime titles."
+        value={anime4k}
+        onChange={(v) => {
+          setAnime4k(v)
+          writeAnime4kEnabled(v)
+        }}
+      />
+      {anime4k ? (
+        <SelectRow
+          title="Anime4K preset"
+          description="Quality looks best; Performance is easiest on the GPU. Steps down on its own if playback struggles."
+          value={anime4kPreset}
+          onChange={(v) => {
+            setAnime4kPreset(v as Anime4kPreset)
+            writeAnime4kPreset(v as Anime4kPreset)
+          }}
+          options={ANIME4K_PRESETS.map((p) => ({ value: p, label: ANIME4K_PRESET_LABELS[p] }))}
+        />
+      ) : null}
       <ToggleRow
         title="Minimize during picture-in-picture"
         description="Tuck the main window away while playback is in the floating window, and bring it back after."

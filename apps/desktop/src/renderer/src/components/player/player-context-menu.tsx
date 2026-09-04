@@ -2,6 +2,12 @@ import { ContextMenu } from '@base-ui/react/context-menu'
 import { cn } from '@renderer/lib/cn'
 import { CheckIcon } from '@renderer/components/icons'
 import { PLAYBACK_SPEEDS } from '@renderer/lib/player-prefs'
+import {
+  ANIME4K_PRESETS,
+  ANIME4K_PRESET_LABELS,
+  type Anime4kPreset,
+  type Anime4kStatus
+} from '@renderer/lib/player/anime4k'
 import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 interface Props {
@@ -9,9 +15,21 @@ interface Props {
   onToggleStats: () => void
   playbackSpeed: number
   onSetSpeed: (speed: number) => void
+  anime4kValue: Anime4kPreset | 'off'
+  anime4kStatus: Anime4kStatus | null
+  onSetAnime4k: (v: Anime4kPreset | 'off') => void
   onScreenshot: () => void
   onReload: () => void
   onShowShortcuts: () => void
+}
+
+function anime4kNote(status: Anime4kStatus | null): string | null {
+  if (!status) return null
+  if (status.kind === 'suspended') return 'Off for this session — playback struggled'
+  if (status.kind !== 'bypassed') return null
+  return status.reason === 'hdr'
+    ? 'Not applied — HDR source'
+    : 'Not applied — already at full resolution'
 }
 
 const popupClass =
@@ -27,10 +45,14 @@ export function PlayerContextMenuPopup({
   onToggleStats,
   playbackSpeed,
   onSetSpeed,
+  anime4kValue,
+  anime4kStatus,
+  onSetAnime4k,
   onScreenshot,
   onReload,
   onShowShortcuts
 }: Props): React.JSX.Element {
+  const anime4kBypassNote = anime4kValue !== 'off' ? anime4kNote(anime4kStatus) : null
   return (
     <ContextMenu.Portal>
       <ContextMenu.Positioner className="z-[100] outline-none">
@@ -61,6 +83,44 @@ export function PlayerContextMenuPopup({
                       {s === playbackSpeed ? <CheckIcon className="size-3.5 text-white" /> : null}
                     </ContextMenu.Item>
                   ))}
+                </ContextMenu.Popup>
+              </ContextMenu.Positioner>
+            </ContextMenu.Portal>
+          </ContextMenu.SubmenuRoot>
+
+          <ContextMenu.SubmenuRoot>
+            <ContextMenu.SubmenuTrigger className={itemClass}>
+              <span>Anime4K</span>
+              <span className="flex items-center gap-1 text-white/55">
+                <span>{anime4kValue === 'off' ? 'Off' : ANIME4K_PRESET_LABELS[anime4kValue]}</span>
+                <CaretRight />
+              </span>
+            </ContextMenu.SubmenuTrigger>
+            <ContextMenu.Portal>
+              <ContextMenu.Positioner
+                className="z-[120] outline-none"
+                sideOffset={8}
+                alignOffset={-6}
+              >
+                <ContextMenu.Popup className={popupClass} style={popupStyle}>
+                  <ContextMenu.Item className={itemClass} onClick={() => onSetAnime4k('off')}>
+                    <span>Off</span>
+                    {anime4kValue === 'off' ? <CheckIcon className="size-3.5 text-white" /> : null}
+                  </ContextMenu.Item>
+                  {ANIME4K_PRESETS.map((p) => (
+                    <ContextMenu.Item key={p} className={itemClass} onClick={() => onSetAnime4k(p)}>
+                      <span>{ANIME4K_PRESET_LABELS[p]}</span>
+                      {p === anime4kValue ? <CheckIcon className="size-3.5 text-white" /> : null}
+                    </ContextMenu.Item>
+                  ))}
+                  {anime4kBypassNote ? (
+                    <>
+                      <Separator />
+                      <div className="px-2.5 py-1.5 text-[11px] leading-4 font-medium text-white/45">
+                        {anime4kBypassNote}
+                      </div>
+                    </>
+                  ) : null}
                 </ContextMenu.Popup>
               </ContextMenu.Positioner>
             </ContextMenu.Portal>
