@@ -9,6 +9,7 @@ import Entry_1_9_0 from './1.9.0.mdx'
 import Entry_2_0_0 from './2.0.0.mdx'
 import Entry_2_1_0 from './2.1.0.mdx'
 import Entry_2_3_0 from './2.3.0.mdx'
+import Entry_2_5_0 from './2.5.0.mdx'
 
 export interface ChangelogEntry {
   version: string
@@ -19,6 +20,12 @@ export interface ChangelogEntry {
 }
 
 export const entries: ChangelogEntry[] = [
+  {
+    version: '2.5.0',
+    date: '2026-09-04',
+    summary: 'Anime4K upscaling: low-res anime, sharpened on your GPU as you watch.',
+    body: Entry_2_5_0
+  },
   {
     version: '2.3.0',
     date: '2026-09-03',
@@ -40,7 +47,8 @@ export const entries: ChangelogEntry[] = [
   {
     version: '1.9.0',
     date: '2026-09-01',
-    summary: 'Two new stream sources, Sootio and Meteor, for a deeper and more reliable source list.',
+    summary:
+      'Two new stream sources, Sootio and Meteor, for a deeper and more reliable source list.',
     body: Entry_1_9_0
   },
   {
