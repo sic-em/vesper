@@ -4,7 +4,7 @@ import { useAuthActions } from '@convex-dev/auth/react'
 import { useNavigate } from '@tanstack/react-router'
 import { api } from '@convex/_generated/api'
 import { Avatar } from '@renderer/components/ui/avatar'
-import { SettingsIcon, SignOutIcon, UserGroupIcon, UserIcon } from '@renderer/components/icons'
+import { PeopleGroupIcon, SettingsIcon, SignOutIcon, UserIcon } from '@renderer/components/icons'
 import { squircleStyle } from '@renderer/components/ui/squircle-surface'
 
 export function UserMenu(): React.JSX.Element {
@@ -64,7 +64,7 @@ export function UserMenu(): React.JSX.Element {
               View profile
             </Item>
             <Item
-              icon={<UserGroupIcon className="size-4" />}
+              icon={<PeopleGroupIcon className="size-4" />}
               onClick={() => navigate({ to: '/friends' })}
             >
               Friends
