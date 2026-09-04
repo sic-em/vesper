@@ -24,6 +24,7 @@ import type * as presenceMonitor from "../presenceMonitor.js";
 import type * as profiles from "../profiles.js";
 import type * as ratings from "../ratings.js";
 import type * as search from "../search.js";
+import type * as seriesgraph from "../seriesgraph.js";
 import type * as tmdb from "../tmdb.js";
 import type * as trakt from "../trakt.js";
 import type * as uploads from "../uploads.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   profiles: typeof profiles;
   ratings: typeof ratings;
   search: typeof search;
+  seriesgraph: typeof seriesgraph;
   tmdb: typeof tmdb;
   trakt: typeof trakt;
   uploads: typeof uploads;

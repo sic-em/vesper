@@ -16,6 +16,8 @@ interface SeasonEpisodesProps {
   details: TmdbTvDetails
   imdbId?: string
   onPlay: (season: number, episode: number, episodeName?: string) => void
+  season: number
+  onSeasonChange: (n: number) => void
   focusSeason?: number
   focusEpisode?: number
 }
@@ -24,37 +26,21 @@ export function SeasonEpisodes({
   details,
   imdbId,
   onPlay,
+  season,
+  onSeasonChange,
   focusSeason,
   focusEpisode
 }: SeasonEpisodesProps): React.JSX.Element | null {
   const navigate = useNavigate()
   const seasons = useMemo(
-    () => details.seasons.filter((s) => s.season_number > 0),
+    () => details.seasons.filter((s) => s.season_number > 0 && s.episode_count > 0),
     [details.seasons]
   )
 
   const progressRows = useConvexQuery(api.playback.listForSeries, imdbId ? { imdbId } : 'skip')
 
-  const defaultSeason = useMemo(() => {
-    if (!seasons.length) return 1
-    if (focusSeason && seasons.some((s) => s.season_number === focusSeason)) return focusSeason
-    if (progressRows && progressRows.length > 0) {
-      const latest = progressRows.toSorted((a, b) => b.updatedAt - a.updatedAt)[0]!
-      if (latest.season !== undefined) return latest.season
-    }
-    return seasons[0]!.season_number
-  }, [seasons, progressRows, focusSeason])
-
-  const [activeSeason, setActiveSeason] = useState<number | null>(null)
-  useEffect(() => {
-    setActiveSeason(null)
-  }, [details.id])
-  useEffect(() => {
-    if (activeSeason === null) setActiveSeason(defaultSeason)
-  }, [defaultSeason, activeSeason])
-
   if (seasons.length === 0) return null
-  const seasonNum = activeSeason ?? defaultSeason
+  const seasonNum = season
 
   const onFocusApplied = (): void => {
     if (focusSeason === undefined && focusEpisode === undefined) return
@@ -74,7 +60,7 @@ export function SeasonEpisodes({
   return (
     <section className="flex flex-col gap-4">
       <div className="px-6">
-        <SeasonSelector seasons={seasons} active={seasonNum} onChange={(n) => setActiveSeason(n)} />
+        <SeasonSelector seasons={seasons} active={seasonNum} onChange={onSeasonChange} />
       </div>
       <EpisodesRow
         tvId={details.id}
@@ -234,7 +220,7 @@ function EpisodesRow({
 
   if (season.isLoading && episodes.length === 0) {
     return (
-      <div className="flex gap-3">
+      <div className="flex gap-3 py-1 pl-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
@@ -246,7 +232,7 @@ function EpisodesRow({
   }
 
   if (episodes.length === 0) {
-    return <p className="text-[13px] text-text-muted">No episodes.</p>
+    return <p className="px-6 text-[13px] text-text-muted">No episodes.</p>
   }
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery, useQuery } from '@tanstack/react-query'
 import { useQuery as useConvexQuery } from 'convex/react'
@@ -25,6 +25,7 @@ import { pickFanartLogo } from '@renderer/lib/fanart'
 import { pickImdb, pickMetacritic, type ImdbRatings } from '@renderer/lib/imdb'
 import { StreamPicker } from '@renderer/components/player/stream-picker'
 import { SeasonEpisodes } from '@renderer/components/media/season-episodes'
+import { EpisodeRatings } from '@renderer/components/media/episode-ratings'
 import { fetchSeriesStreams } from '@renderer/lib/streams'
 import { formatTimeLeft } from '@renderer/lib/next-episode'
 import { api } from '@convex/_generated/api'
@@ -153,6 +154,27 @@ function TvPage(): React.JSX.Element {
 
   const playTarget = computePlayTarget(progressRows ?? null)
 
+  // Season selection is shared by the episode rail and the ratings graph, so
+  // switching seasons in one keeps the other in step.
+  const seasons = useMemo(
+    () => details.data.seasons.filter((s) => s.season_number > 0 && s.episode_count > 0),
+    [details.data.seasons]
+  )
+  const defaultSeason = useMemo(() => {
+    if (!seasons.length) return 1
+    if (search.focusSeason && seasons.some((s) => s.season_number === search.focusSeason)) {
+      return search.focusSeason
+    }
+    if (progressRows && progressRows.length > 0) {
+      const latest = progressRows.toSorted((a, b) => b.updatedAt - a.updatedAt)[0]!
+      if (latest.season !== undefined) return latest.season
+    }
+    return seasons[0]!.season_number
+  }, [seasons, progressRows, search.focusSeason])
+  // Keyed by show so navigating to another series drops the stale choice.
+  const [seasonChoice, setSeasonChoice] = useState<{ tvId: number; season: number } | null>(null)
+  const activeSeason = seasonChoice?.tvId === tvId ? seasonChoice.season : defaultSeason
+
   useQuery({
     queryKey: ['streams', 'tv', imdbId, playTarget.ref.season, playTarget.ref.episode],
     queryFn: () => fetchSeriesStreams(imdbId!, playTarget.ref.season, playTarget.ref.episode, tvId),
@@ -194,14 +216,6 @@ function TvPage(): React.JSX.Element {
     <div className="flex flex-col gap-8 pb-8">
       <Hero {...heroProps} onPlay={handlePlay} resume={resume} />
 
-      <SeasonEpisodes
-        details={details.data}
-        imdbId={imdbId}
-        onPlay={handlePlayEpisode}
-        focusSeason={search.focusSeason}
-        focusEpisode={search.focusEpisode}
-      />
-
       {trailers.length > 0 ? (
         <ScrollSection title="Videos">
           {trailers.map((v) => (
@@ -209,6 +223,18 @@ function TvPage(): React.JSX.Element {
           ))}
         </ScrollSection>
       ) : null}
+
+      <SeasonEpisodes
+        details={details.data}
+        imdbId={imdbId}
+        onPlay={handlePlayEpisode}
+        season={activeSeason}
+        onSeasonChange={(n) => setSeasonChoice({ tvId, season: n })}
+        focusSeason={search.focusSeason}
+        focusEpisode={search.focusEpisode}
+      />
+
+      {seasons.length > 0 ? <EpisodeRatings tmdbId={tvId} season={activeSeason} /> : null}
 
       {cast.length > 0 ? (
         <ScrollSection title="Cast" gapClass="gap-4">

@@ -1,6 +1,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import { fanartMovie, fanartTv, pickFanartLogo, type FanartMovie, type FanartTv } from './fanart'
 import { fetchImdbRatings } from './imdb'
+import { fetchSeasonRatings } from './seriesgraph'
 import { pickEnglishLogo, tmdb, type TmdbMovieDetails, type TmdbTvDetails } from './tmdb'
 
 interface TmdbTvExternalIds {
@@ -30,6 +31,14 @@ export const imdbRatingsQuery = (imdbId: string | undefined) =>
     queryFn: () => fetchImdbRatings(imdbId!),
     staleTime: 7 * 24 * 60 * 60_000,
     enabled: !!imdbId
+  })
+
+export const seasonRatingsQuery = (tmdbId: number | undefined) =>
+  queryOptions({
+    queryKey: ['seriesgraph', 'ratings', tmdbId],
+    queryFn: () => fetchSeasonRatings(tmdbId!),
+    staleTime: 12 * 60 * 60_000,
+    enabled: !!tmdbId
   })
 
 export const tvExternalIdsQuery = (tvId: number | undefined) =>

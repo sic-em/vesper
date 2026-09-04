@@ -166,5 +166,24 @@ export default defineSchema({
     imdbVotes: v.optional(v.number()),
     metacritic: v.optional(v.number()),
     fetchedAt: v.number()
-  }).index('by_imdbId', ['imdbId'])
+  }).index('by_imdbId', ['imdbId']),
+
+  seriesgraphRatings: defineTable({
+    tmdbId: v.number(),
+    seasons: v.array(
+      v.object({
+        season: v.number(),
+        episodes: v.array(
+          v.object({
+            episode: v.number(),
+            name: v.optional(v.string()),
+            rating: v.optional(v.number()),
+            votes: v.optional(v.number()),
+            airDate: v.optional(v.string())
+          })
+        )
+      })
+    ),
+    fetchedAt: v.number()
+  }).index('by_tmdbId', ['tmdbId'])
 })
