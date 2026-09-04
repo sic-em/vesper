@@ -3,7 +3,7 @@ import { useQuery } from 'convex/react'
 import { useNavigate } from '@tanstack/react-router'
 import { IconButton } from '@renderer/components/ui/icon-button'
 import { Button } from '@renderer/components/ui/button'
-import { SidebarRightIcon, UserGroupIcon } from '@renderer/components/icons'
+import { PeopleGroupIcon, SidebarRightIcon } from '@renderer/components/icons'
 import { FriendRow, type FriendStatus } from './friend-row'
 import { FriendContextMenu } from './friend-context-menu'
 import { tmdbImage } from '@renderer/lib/tmdb'
@@ -142,7 +142,7 @@ function ActivityRow({
 function EmptyState({ onFindFriends }: { onFindFriends: () => void }): React.JSX.Element {
   return (
     <div className={cn('flex flex-col items-center justify-center gap-3 px-4 py-12 text-center')}>
-      <UserGroupIcon className={cn('size-7 text-text-muted')} />
+      <PeopleGroupIcon className={cn('size-7 text-text-muted')} />
       <p className={cn('text-[13px] leading-4 font-medium text-text-tertiary')}>
         No activity yet — add friends to see what they&rsquo;re watching.
       </p>
