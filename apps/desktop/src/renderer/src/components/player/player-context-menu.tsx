@@ -56,7 +56,10 @@ export function PlayerContextMenuPopup({
   return (
     <ContextMenu.Portal>
       <ContextMenu.Positioner className="z-[100] outline-none">
-        <ContextMenu.Popup className={popupClass} style={popupStyle}>
+        {/* The trigger is a non-focusable fullscreen div, so default close-focus restoration
+            falls through to the first tabbable in the document — the shell's search input
+            under the player, whose focus opens the search popover. Don't move focus at all. */}
+        <ContextMenu.Popup className={popupClass} style={popupStyle} finalFocus={false}>
           <ContextMenu.Item className={itemClass} onClick={onToggleStats}>
             <span>Stats for nerds</span>
             {statsVisible ? <CheckIcon className="size-3.5 text-white" /> : null}
