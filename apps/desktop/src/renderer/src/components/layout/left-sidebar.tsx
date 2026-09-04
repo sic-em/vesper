@@ -11,6 +11,7 @@ import { ListContextMenu } from '@renderer/components/library/list-context-menu'
 import { FeedbackModal } from '@renderer/components/feedback/feedback-modal'
 import { UpdateCard } from './update-card'
 import { useSmoothScroll } from '@renderer/hooks/use-smooth-scroll'
+import { useAppVersion } from '@renderer/hooks/use-app-version'
 import { tmdbImage } from '@renderer/lib/tmdb'
 import { api } from '@convex/_generated/api'
 import type { Id } from '@convex/_generated/dataModel'
@@ -163,6 +164,7 @@ export const LeftSidebar = memo(function LeftSidebar({
   const activeListId = listMatch?.params.id as Id<'lists'> | undefined
   const reduced = useReducedMotion()
   const reorderListMutation = useMutation(api.lists.reorderList)
+  const version = useAppVersion()
 
   const systemLists = useMemo<ListRow[]>(() => lists.filter((l) => l.kind !== 'custom'), [lists])
   const pinnedCustom = useMemo<ListRow[]>(
@@ -281,7 +283,7 @@ export const LeftSidebar = memo(function LeftSidebar({
       </div>
       <UpdateCard />
       <div className="relative flex items-center gap-1.5 px-2 pb-2 text-[12px] leading-4 font-medium text-text-muted">
-        <span>Vesper Stable</span>
+        <span>{version ? `Vesper ${version}` : 'Vesper'}</span>
         <span aria-hidden>·</span>
         <button
           type="button"
