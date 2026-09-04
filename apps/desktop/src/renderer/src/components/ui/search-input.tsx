@@ -19,7 +19,7 @@ export function SearchInput({
     <label
       htmlFor={id}
       className={cn(
-        'flex h-12 w-full max-w-[560px] items-center gap-3 rounded-xl bg-surface-2 px-4',
+        'flex h-12 w-full max-w-[560px] items-center gap-3 rounded-xl bg-surface-2 pl-4 pr-1.5',
         className
       )}
     >

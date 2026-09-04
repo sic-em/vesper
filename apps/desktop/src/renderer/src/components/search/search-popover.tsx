@@ -5,8 +5,15 @@ import { useQuery as useTanstackQuery } from '@tanstack/react-query'
 import { useMutation, useQuery as useConvexQuery } from 'convex/react'
 import { SearchInput } from '@renderer/components/ui/search-input'
 import { SkeletonSwap } from '@renderer/components/ui/skeleton-swap'
+import { IconButton } from '@renderer/components/ui/icon-button'
 import { Avatar } from '@renderer/components/ui/avatar'
-import { CloseIcon, CmdIcon, ReturnIcon, SearchIcon } from '@renderer/components/icons'
+import {
+  CloseIcon,
+  CmdIcon,
+  ProjectsIcon,
+  ReturnIcon,
+  SearchIcon
+} from '@renderer/components/icons'
 import { isMac } from '@renderer/lib/platform'
 import { cn } from '@renderer/lib/cn'
 import { searchMultiQuery } from '@renderer/lib/tmdb-queries'
@@ -67,7 +74,7 @@ export function SearchControl(): React.JSX.Element {
           }}
           onFocus={() => setOpen(true)}
           className={open ? 'rounded-b-none' : ''}
-          trailing={query.length > 0 ? <KbdHint /> : null}
+          trailing={<TrailingSlot open={open} showHint={query.length > 0} />}
         />
       </div>
       <Popover.Root
@@ -531,6 +538,46 @@ function RecentRow({
         <CloseIcon className="size-3.5" />
       </button>
     </div>
+  )
+}
+
+/**
+ * The right end of the search bar holds two things in one slot: the explore
+ * shortcut at rest, and the ⌘↵ hint once you are typing. Cross-faded as an
+ * icon swap so the bar never reflows between the two.
+ */
+function TrailingSlot({ open, showHint }: { open: boolean; showHint: boolean }): React.JSX.Element {
+  const navigate = useNavigate()
+  return (
+    <span className="t-icon-swap shrink-0" data-state={open ? 'b' : 'a'}>
+      <span
+        className={cn('t-icon flex items-center gap-2', open && 'pointer-events-none')}
+        data-icon="a"
+        aria-hidden={open}
+      >
+        <span className="h-6 w-px shrink-0 bg-white/[0.1]" />
+        <IconButton
+          variant="ghost"
+          aria-label="Explore"
+          tabIndex={open ? -1 : 0}
+          onClick={(e) => {
+            // The input is wrapped in a <label>, so let the click land on the
+            // button instead of being forwarded to the field it labels.
+            e.preventDefault()
+            navigate({ to: '/explore' })
+          }}
+          className="size-9 rounded-lg transition-[color,opacity] duration-150 ease-out hover:text-text"
+        >
+          <ProjectsIcon className="size-[19px]" />
+        </IconButton>
+      </span>
+      <span
+        className="t-icon pointer-events-none flex items-center justify-end pr-1.5"
+        data-icon="b"
+      >
+        {showHint ? <KbdHint /> : null}
+      </span>
+    </span>
   )
 }
 
