@@ -1,3 +1,5 @@
+import type { Anime4kPreset, Anime4kStatus } from './anime4k'
+
 export type PlayerState =
   | 'idle'
   | 'loading'
@@ -30,6 +32,7 @@ export interface PlayerStats {
   droppedFrames: number
   fps: number
   decodeHw: boolean | null
+  anime4k: Anime4kStatus
 
   audioCodec: string | null
   audioChannels: number | null
@@ -66,4 +69,6 @@ export interface PlayerEvents {
   tracks: (t: { video: PlayerTrack[]; audio: PlayerTrack[]; subtitle: PlayerTrack[] }) => void
   stats: (s: PlayerStats) => void
   error: (e: PlayerError) => void
+  /** droppedTo is set only when an automatic step-down fired (never for user changes). */
+  anime4k: (e: { status: Anime4kStatus; droppedTo: Anime4kPreset | 'off' | null }) => void
 }

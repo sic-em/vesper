@@ -9,11 +9,31 @@ import { WebGPURenderer } from './webgpu-renderer'
 import { AvClock } from './av-clock'
 import { AudioPipeline } from './audio-pipeline'
 import { ensureExtraDecoders } from './codec-support'
+import {
+  ANIME4K_DEFAULT_PRESET,
+  capPreset,
+  sameAnime4kStatus,
+  stepDownPreset,
+  type Anime4kPref,
+  type Anime4kPreset,
+  type Anime4kStatus
+} from './anime4k'
 import type { PlayerEvents, PlayerState, PlayerStats, PlayerTrack } from './types'
 
 const LATE_DROP_MS = 50
 const STAT_INTERVAL_MS = 500
 const STALL_MS = 250
+
+// Step-down policy: judge over a 2s window of stat ticks, after a 4s grace period for a fresh
+// chain to warm up, and only when drops are both frequent and numerous — network stalls pause
+// the loop without dropping, so sustained drops mean decode/render can't keep pace.
+const ANIME4K_WINDOW_TICKS = 4
+const ANIME4K_GRACE_MS = 4000
+const ANIME4K_MIN_DROPS = 10
+const ANIME4K_DROP_RATIO = 0.15
+// Below this on-screen magnification an upscale adds nothing visible — same threshold the
+// upstream Mode A chain uses before it bothers upscaling.
+const ANIME4K_MIN_SCALE = 1.2
 
 type Handlers = { [K in keyof PlayerEvents]: Set<PlayerEvents[K]> }
 
@@ -39,8 +59,19 @@ export class PlayerController {
     statechange: new Set(),
     tracks: new Set(),
     stats: new Set(),
-    error: new Set()
+    error: new Set(),
+    anime4k: new Set()
   }
+
+  private anime4kPref: Anime4kPref = { enabled: false, preset: ANIME4K_DEFAULT_PRESET }
+  /** Session step-down ceiling — never persisted, retried fresh next playback. */
+  private anime4kCeiling: Anime4kPreset | 'off' | null = null
+  private anime4kStatus: Anime4kStatus = { kind: 'off' }
+  private anime4kChangedAt = 0
+  private a4kWindow: { dropped: number; displayed: number }[] = []
+  private a4kPrevDropped = 0
+  private a4kPrevDisplayed = 0
+  private readonly onWindowResize = (): void => this.evaluateAnime4k()
 
   private _state: PlayerState = 'idle'
   private _mediaTime = 0
@@ -70,6 +101,16 @@ export class PlayerController {
     this.demuxer = new Demuxer(opts.url)
     this.canvas = opts.canvas
     this._mediaTime = opts.startSec ?? 0
+    // The resolution bypass compares source size against the displayed size, which changes with
+    // the window (fullscreen, snapping) — re-evaluate on resize.
+    window.addEventListener('resize', this.onWindowResize)
+    this.renderer.onAnime4kError = (): void => {
+      this.anime4kCeiling = 'off'
+      this.applyAnime4k({ kind: 'suspended' }, 'off')
+    }
+    this.renderer.onAnime4kReady = (): void => {
+      if (this.paused) this.repaint()
+    }
   }
 
   on<K extends keyof PlayerEvents>(event: K, cb: PlayerEvents[K]): () => void {
@@ -155,6 +196,8 @@ export class PlayerController {
 
       const firstDecodable = this.audioMeta.findIndex((a) => a.canDecode)
       if (firstDecodable >= 0) this.attachAudio(firstDecodable)
+
+      this.evaluateAnime4k()
 
       void this.computeBitrates()
 
@@ -242,6 +285,90 @@ export class PlayerController {
 
   setRate(rate: number): void {
     this.clock.setRate(rate)
+  }
+
+  setAnime4k(pref: Anime4kPref): void {
+    this.anime4kPref = pref
+    // An explicit user choice resets any session step-down — their call beats the ladder.
+    this.anime4kCeiling = null
+    this.evaluateAnime4k()
+  }
+
+  private evaluateAnime4k(): void {
+    this.applyAnime4k(this.computeAnime4kStatus(), null)
+  }
+
+  private computeAnime4kStatus(): Anime4kStatus {
+    const m = this.meta
+    if (!m || !this.anime4kPref.enabled) return { kind: 'off' }
+    if (m.sourceIsHdr) return { kind: 'bypassed', reason: 'hdr' }
+    if (!this.anime4kUpscaleVisible(m.displayWidth, m.displayHeight)) {
+      return { kind: 'bypassed', reason: 'resolution' }
+    }
+    if (this.anime4kCeiling === 'off') return { kind: 'suspended' }
+    const preset = this.anime4kCeiling
+      ? capPreset(this.anime4kPref.preset, this.anime4kCeiling)
+      : this.anime4kPref.preset
+    return { kind: 'active', preset }
+  }
+
+  private anime4kUpscaleVisible(srcW: number, srcH: number): boolean {
+    const dpr = window.devicePixelRatio || 1
+    const cw = this.canvas.clientWidth * dpr
+    const ch = this.canvas.clientHeight * dpr
+    if (cw <= 0 || ch <= 0) return true
+    // The canvas is object-contain over the viewport; this is the on-screen magnification.
+    const scale = Math.min(cw / srcW, ch / srcH)
+    return scale > ANIME4K_MIN_SCALE
+  }
+
+  private applyAnime4k(status: Anime4kStatus, droppedTo: Anime4kPreset | 'off' | null): void {
+    if (sameAnime4kStatus(this.anime4kStatus, status) && droppedTo == null) return
+    this.anime4kStatus = status
+    this.anime4kChangedAt = performance.now()
+    this.a4kWindow = []
+    const m = this.meta
+    if (m) {
+      const active = status.kind === 'active'
+      this.renderer.setAnime4k(active ? status.preset : null)
+      // The chain doubles the source, so the canvas backing store must too — otherwise the
+      // upscaled texture would be squeezed right back down before it reaches the screen.
+      const w = active ? m.displayWidth * 2 : m.displayWidth
+      const h = active ? m.displayHeight * 2 : m.displayHeight
+      if (this.canvas.width !== w || this.canvas.height !== h) {
+        this.canvas.width = w
+        this.canvas.height = h
+      }
+      if (this.paused) this.repaint()
+    }
+    this.emit('anime4k', { status, droppedTo })
+    this.emit('stats', this.buildStats())
+  }
+
+  private monitorAnime4kLoad(now: number): void {
+    const droppedDelta = this.droppedFrames - this.a4kPrevDropped
+    const displayedDelta = this.displayedFrames - this.a4kPrevDisplayed
+    this.a4kPrevDropped = this.droppedFrames
+    this.a4kPrevDisplayed = this.displayedFrames
+    if (this.anime4kStatus.kind !== 'active') return
+    if (now - this.anime4kChangedAt < ANIME4K_GRACE_MS) return
+    this.a4kWindow.push({ dropped: droppedDelta, displayed: displayedDelta })
+    if (this.a4kWindow.length > ANIME4K_WINDOW_TICKS) this.a4kWindow.shift()
+    if (this.a4kWindow.length < ANIME4K_WINDOW_TICKS) return
+    let dropped = 0
+    let displayed = 0
+    for (const t of this.a4kWindow) {
+      dropped += t.dropped
+      displayed += t.displayed
+    }
+    const total = dropped + displayed
+    if (total === 0 || dropped < ANIME4K_MIN_DROPS || dropped / total < ANIME4K_DROP_RATIO) return
+    const next = stepDownPreset(this.anime4kStatus.preset)
+    this.anime4kCeiling = next ?? 'off'
+    this.applyAnime4k(
+      next ? { kind: 'active', preset: next } : { kind: 'suspended' },
+      next ?? 'off'
+    )
   }
 
   setVolume(v: number): void {
@@ -342,6 +469,7 @@ export class PlayerController {
           this.lastFps = (framesSinceStat * 1000) / (now - lastStat)
           framesSinceStat = 0
           this.sampleThroughput(now)
+          this.monitorAnime4kLoad(now)
           lastStat = now
           this.emit('timeupdate', this._mediaTime)
           this.emit('stats', this.buildStats())
@@ -409,6 +537,7 @@ export class PlayerController {
       droppedFrames: this.droppedFrames,
       fps: Math.round(this.lastFps * 10) / 10,
       decodeHw: null,
+      anime4k: this.anime4kStatus,
 
       audioCodec: a?.codec ?? null,
       audioChannels: a?.channels ?? null,
@@ -434,6 +563,7 @@ export class PlayerController {
 
   destroy(): void {
     this.generation++
+    window.removeEventListener('resize', this.onWindowResize)
     if (this.resumeDeferred) this.resumeDeferred.resolve()
     this.audio?.destroy()
     this.lastFrame?.close()
