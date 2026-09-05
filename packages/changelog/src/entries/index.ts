@@ -10,6 +10,7 @@ import Entry_2_0_0 from './2.0.0.mdx'
 import Entry_2_1_0 from './2.1.0.mdx'
 import Entry_2_3_0 from './2.3.0.mdx'
 import Entry_2_5_0 from './2.5.0.mdx'
+import Entry_2_6_0 from './2.6.0.mdx'
 
 export interface ChangelogEntry {
   version: string
@@ -20,6 +21,12 @@ export interface ChangelogEntry {
 }
 
 export const entries: ChangelogEntry[] = [
+  {
+    version: '2.6.0',
+    date: '2026-09-05',
+    summary: 'Live fights: UFC and boxing on the home screen, with full cards and live win odds.',
+    body: Entry_2_6_0
+  },
   {
     version: '2.5.0',
     date: '2026-09-04',
