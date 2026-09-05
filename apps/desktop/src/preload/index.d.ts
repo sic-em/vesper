@@ -59,6 +59,10 @@ export interface VesperApi {
   app: {
     relaunch: () => Promise<void>
   }
+  fights: {
+    resolveStream: (embedUrl: string) => Promise<string>
+    kalshiGet: (path: string) => Promise<unknown>
+  }
   appIcon: {
     getVariant: () => Promise<IconVariantId>
     setVariant: (id: IconVariantId) => Promise<void>

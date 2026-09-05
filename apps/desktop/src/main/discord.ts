@@ -55,8 +55,9 @@ class DiscordRpc {
         statusDisplayType: STATUS_DISPLAY_DETAILS,
         details: input.details,
         state: input.state,
-        largeImageKey: input.largeImage,
-        largeImageText: input.largeText,
+        // An empty image means no image — never a broken placeholder key.
+        largeImageKey: input.largeImage || undefined,
+        largeImageText: input.largeImage ? input.largeText : undefined,
         startTimestamp: input.startTimestamp ? input.startTimestamp * 1000 : undefined,
         endTimestamp: input.endTimestamp ? input.endTimestamp * 1000 : undefined,
         buttons: [{ label: 'Watch on Vesper', url: 'https://vespr.dev' }]

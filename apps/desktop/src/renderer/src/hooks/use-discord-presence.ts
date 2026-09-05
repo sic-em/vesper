@@ -26,6 +26,72 @@ function pad2(n: number): string {
   return String(n).padStart(2, '0')
 }
 
+interface LiveParams {
+  title: string
+  poster?: string | null
+  /** idle = not playing yet (loading, switching) — keeps whatever was shown. */
+  status: 'idle' | 'live' | 'paused'
+}
+
+/**
+ * Presence for live events: elapsed session time instead of position/duration,
+ * and no updates while a stream is resolving so Discord doesn't flicker
+ * between activities on every stream switch.
+ */
+export function useLiveDiscordPresence({ title, poster, status }: LiveParams): void {
+  const [enabled, setEnabled] = useState<boolean>(() => readDiscordRpcEnabled())
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent): void => {
+      if (e.key === 'vesper.playback.discordRpc') setEnabled(readDiscordRpcEnabled())
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  const startRef = useRef<number | null>(null)
+  const lastRef = useRef<'live' | 'paused' | 'cleared'>('cleared')
+
+  useEffect(() => {
+    const api = window.api?.discord
+    if (!api) return
+    if (!enabled || !title) {
+      if (lastRef.current !== 'cleared') {
+        void api.clearActivity?.()
+        lastRef.current = 'cleared'
+      }
+      return
+    }
+    if (status === 'live' && lastRef.current !== 'live') {
+      if (startRef.current === null) startRef.current = Math.floor(Date.now() / 1000)
+      void api.setActivity({
+        details: title,
+        state: 'LIVE',
+        largeImage: poster || '',
+        largeText: title,
+        startTimestamp: startRef.current
+      })
+      lastRef.current = 'live'
+    } else if (status === 'paused' && lastRef.current !== 'paused') {
+      void api.setActivity({
+        details: title,
+        state: 'Paused',
+        largeImage: poster || '',
+        largeText: title
+      })
+      lastRef.current = 'paused'
+    }
+  }, [enabled, status, title, poster])
+
+  useEffect(() => {
+    return () => {
+      void window.api?.discord?.clearActivity?.()
+      lastRef.current = 'cleared'
+      startRef.current = null
+    }
+  }, [])
+}
+
 export function useDiscordPresence({
   title,
   poster,

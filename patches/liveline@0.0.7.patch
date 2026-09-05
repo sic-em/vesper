@@ -1,0 +1,44 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index 4709730f1d6608dee4ffb3a386d1732f776c5f5c..3cd499bb3dd04fcc1bc8ec7c50e734494b03efe8 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -699,7 +699,7 @@ function drawMultiCrosshair(ctx, layout, palette, hoverX, hoverTime, entries, fo
+   const segments = [
+     { text: timeText, color: palette.gridLabel }
+   ];
+-  for (const e of entries) {
++  for (const e of entries) { if (!e.label) continue;
+     segments.push({ text: sep, color: palette.gridLabel });
+     segments.push({ text: dotInline, color: e.color, isDot: true });
+     const label = e.label ? `${e.label} ` : "";
+@@ -1668,7 +1668,7 @@ function drawMultiFrame(ctx, layout, opts) {
+       } else {
+         drawSimpleDot(ctx, lastPt[0], lastPt[1], entry.palette.line, 3);
+       }
+-      if (entry.label) {
++      if (false) {
+         ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+         ctx.textAlign = "left";
+         ctx.fillStyle = entry.palette.line;
+diff --git a/dist/index.js b/dist/index.js
+index fd0506272e9a54432a0882c3a389ee74302e4718..5db76cecfa034356b325f2cccabebad1eb6cd088 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -672,7 +672,7 @@ function drawMultiCrosshair(ctx, layout, palette, hoverX, hoverTime, entries, fo
+   const segments = [
+     { text: timeText, color: palette.gridLabel }
+   ];
+-  for (const e of entries) {
++  for (const e of entries) { if (!e.label) continue;
+     segments.push({ text: sep, color: palette.gridLabel });
+     segments.push({ text: dotInline, color: e.color, isDot: true });
+     const label = e.label ? `${e.label} ` : "";
+@@ -1641,7 +1641,7 @@ function drawMultiFrame(ctx, layout, opts) {
+       } else {
+         drawSimpleDot(ctx, lastPt[0], lastPt[1], entry.palette.line, 3);
+       }
+-      if (entry.label) {
++      if (false) {
+         ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+         ctx.textAlign = "left";
+         ctx.fillStyle = entry.palette.line;
