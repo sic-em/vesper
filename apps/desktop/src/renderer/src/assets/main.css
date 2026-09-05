@@ -365,6 +365,15 @@ svg {
   }
 }
 
+/* Liveline mounts a header bar (time-window buttons + series toggle chips)
+   as a sibling above its canvas, while the canvas still fills the wrapper's
+   full height — the bar would push the canvas past the wrapper. The fight
+   card wants neither control, so drop the bar entirely. */
+/* !important: the bar carries an inline display:flex. */
+.kalshi-chart > div:not(.kalshi-canvas) {
+  display: none !important;
+}
+
 body.is-screenshotting *:not(video):not(:has(video)) {
   visibility: hidden !important;
 }

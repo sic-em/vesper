@@ -5,6 +5,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import { useQuery as useConvexQuery } from 'convex/react'
 import { useScrollContainer } from '@renderer/lib/scroll-container'
 import { ContinueCard } from '@renderer/components/media/continue-card'
+import { FightsSection } from '@renderer/components/fights/fights-section'
 import { PosterRow, type PosterRowItem } from '@renderer/components/media/poster-row'
 import { FeaturedCarousel } from '@renderer/components/media/featured-carousel'
 import { ScrollSection } from '@renderer/components/ui/scroll-section'
@@ -155,6 +156,8 @@ function HomePage(): React.JSX.Element {
           contextMenu={false}
         />
       </DeferredPosterRow>
+      <FightsSection />
+
       <DeferredPosterRow>
         <PosterRow
           title="Top 10 Movies"
