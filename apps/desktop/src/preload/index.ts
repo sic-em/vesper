@@ -63,9 +63,11 @@ const api = {
   app: {
     relaunch: () => ipcRenderer.invoke('app:relaunch') as Promise<void>
   },
-  fights: {
+  embed: {
     resolveStream: (embedUrl: string) =>
-      ipcRenderer.invoke('fights:resolveStream', embedUrl) as Promise<string>,
+      ipcRenderer.invoke('embed:resolveStream', embedUrl) as Promise<string>
+  },
+  fights: {
     kalshiGet: (path: string) => ipcRenderer.invoke('fights:kalshiGet', path) as Promise<unknown>
   },
   appIcon: {

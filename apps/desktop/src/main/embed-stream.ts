@@ -10,33 +10,39 @@ import { request as httpsRequest } from 'https'
 import { randomBytes } from 'crypto'
 import { URL } from 'url'
 
-// Live fight streams sit behind an embed page that decrypts its playlist URL
-// inside obfuscated WASM (ADR-0017). A hidden window loads the embed, we catch
-// the playlist request it makes, and playback then flows through a local proxy
+// Embed pages — the fights source (ADR-0017) and the web players that carry
+// titles debrid refuses (ADR-0018) — only ever expose a playable URL by
+// requesting it themselves. A hidden window loads the embed, we catch the
+// playlist request it makes, and playback then flows through a local proxy
 // that attaches the headers the stream hosts demand — the renderer's hls.js
-// only ever talks to 127.0.0.1.
+// only ever talks to 127.0.0.1. The Referer is the embed's own origin, so one
+// resolver serves every host.
 
-const EMBED_REFERER = 'https://embed.st/'
 const CHROME_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 const EMBED_TIMEOUT_MS = 25_000
-const EMBED_PARTITION = 'fights-embed'
+const EMBED_PARTITION = 'embed-intercept'
 const M3U8_RE = /\.m3u8(\?|$)/i
+const HLS_CONTENT_TYPE_RE = /mpegurl/i
 const MAX_REDIRECTS = 3
 
 let proxyServer: Server | null = null
 let proxyPort = 0
 let proxyToken = ''
 
-function upstreamHeaders(): Record<string, string> {
+function upstreamHeaders(referer: string): Record<string, string> {
   return {
-    Referer: EMBED_REFERER,
+    Referer: referer,
     'Icy-MetaData': '1',
     'User-Agent': CHROME_UA
   }
 }
 
-function fetchUpstream(rawUrl: string, redirectsLeft = MAX_REDIRECTS): Promise<IncomingMessage> {
+function fetchUpstream(
+  rawUrl: string,
+  referer: string,
+  redirectsLeft = MAX_REDIRECTS
+): Promise<IncomingMessage> {
   return new Promise((resolve, reject) => {
     let target: URL
     try {
@@ -50,12 +56,15 @@ function fetchUpstream(rawUrl: string, redirectsLeft = MAX_REDIRECTS): Promise<I
       return
     }
     const doRequest = target.protocol === 'https:' ? httpsRequest : httpRequest
-    const req = doRequest(target, { headers: upstreamHeaders() }, (res) => {
+    const req = doRequest(target, { headers: upstreamHeaders(referer) }, (res) => {
       const status = res.statusCode ?? 0
       const location = res.headers.location
       if (status >= 300 && status < 400 && location && redirectsLeft > 0) {
         res.resume()
-        fetchUpstream(new URL(location, target).toString(), redirectsLeft - 1).then(resolve, reject)
+        fetchUpstream(new URL(location, target).toString(), referer, redirectsLeft - 1).then(
+          resolve,
+          reject
+        )
         return
       }
       resolve(res)
@@ -66,18 +75,28 @@ function fetchUpstream(rawUrl: string, redirectsLeft = MAX_REDIRECTS): Promise<I
   })
 }
 
-function proxyUrlFor(absUrl: string): string {
-  const kind = M3U8_RE.test(absUrl) ? 'playlist' : 'seg'
-  return `http://127.0.0.1:${proxyPort}/${kind}?t=${proxyToken}&u=${encodeURIComponent(absUrl)}`
+function proxyUrlFor(absUrl: string, referer: string, kind: 'playlist' | 'seg'): string {
+  const q = `t=${proxyToken}&r=${encodeURIComponent(referer)}&u=${encodeURIComponent(absUrl)}`
+  return `http://127.0.0.1:${proxyPort}/${kind}?${q}`
+}
+
+function isMasterPlaylist(text: string): boolean {
+  return /^#EXT-X-STREAM-INF/m.test(text)
 }
 
 // URI lines and URI="..." attributes both get rerouted through the proxy so
 // every follow-up request (variant playlists, init maps, segments on whatever
-// host the playlist names) carries the required headers.
-function rewritePlaylist(text: string, baseUrl: string): string {
-  const rewriteRef = (ref: string): string => {
+// host the playlist names) carries the required headers. Tokenized proxies
+// don't put .m3u8 in their URLs, so a reference's kind comes from where it
+// sits: a master's bare lines are variant playlists, a media playlist's are
+// segments; attribute URIs (keys, init maps) are raw unless named outright.
+function rewritePlaylist(text: string, baseUrl: string, referer: string): string {
+  const master = isMasterPlaylist(text)
+  const rewriteRef = (ref: string, attr: boolean): string => {
     try {
-      return proxyUrlFor(new URL(ref, baseUrl).toString())
+      const abs = new URL(ref, baseUrl).toString()
+      const kind = M3U8_RE.test(abs) || (master && !attr) ? 'playlist' : 'seg'
+      return proxyUrlFor(abs, referer, kind)
     } catch {
       return ref
     }
@@ -88,9 +107,9 @@ function rewritePlaylist(text: string, baseUrl: string): string {
       const trimmed = line.trim()
       if (!trimmed) return line
       if (trimmed.startsWith('#')) {
-        return line.replace(/URI="([^"]+)"/g, (_m, uri: string) => `URI="${rewriteRef(uri)}"`)
+        return line.replace(/URI="([^"]+)"/g, (_m, uri: string) => `URI="${rewriteRef(uri, true)}"`)
       }
-      return rewriteRef(trimmed)
+      return rewriteRef(trimmed, false)
     })
     .join('\n')
 }
@@ -118,8 +137,9 @@ async function handleProxyRequest(req: IncomingMessage, res: ServerResponse): Pr
     return
   }
   const target = url.searchParams.get('u') ?? ''
+  const referer = url.searchParams.get('r') ?? ''
   if (url.pathname === '/playlist') {
-    const upstream = await fetchUpstream(target)
+    const upstream = await fetchUpstream(target, referer)
     if ((upstream.statusCode ?? 0) >= 400) {
       upstream.resume()
       res.writeHead(502, baseResponseHeaders()).end()
@@ -131,11 +151,11 @@ async function handleProxyRequest(req: IncomingMessage, res: ServerResponse): Pr
         ...baseResponseHeaders(),
         'content-type': 'application/vnd.apple.mpegurl'
       })
-      .end(rewritePlaylist(body, target))
+      .end(rewritePlaylist(body, target, referer))
     return
   }
   if (url.pathname === '/seg') {
-    const upstream = await fetchUpstream(target)
+    const upstream = await fetchUpstream(target, referer)
     res.writeHead(upstream.statusCode ?? 502, {
       ...baseResponseHeaders(),
       'content-type': upstream.headers['content-type'] ?? 'application/octet-stream'
@@ -167,9 +187,13 @@ function ensureProxy(): Promise<void> {
   })
 }
 
-// One hidden embed at a time: the intercept listener is session-wide, so
-// concurrent loads would race for it.
+// One hidden embed at a time: the intercept listeners are session-wide, so
+// concurrent loads would race for them.
 let embedQueue: Promise<unknown> = Promise.resolve()
+
+// Ad networks load alongside the real player on every embed page; nothing
+// they serve is ever the stream.
+const AD_HOST_RE = /doubleclick|adnxs|exoclick|propeller|popads|juicyads|gammaplatform|vcmdiawe/i
 
 function interceptPlaylist(embedUrl: string): Promise<string> {
   const ses = session.fromPartition(EMBED_PARTITION)
@@ -187,7 +211,7 @@ function interceptPlaylist(embedUrl: string): Promise<string> {
     }
   })
   win.webContents.setAudioMuted(true)
-  // The embed page is dense with popup/ad scripts — nothing it opens may
+  // Embed pages are dense with popup/ad scripts — nothing they open may
   // surface, and the window itself never shows.
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
@@ -198,6 +222,7 @@ function interceptPlaylist(embedUrl: string): Promise<string> {
       settled = true
       clearTimeout(timer)
       ses.webRequest.onBeforeRequest(null)
+      ses.webRequest.onHeadersReceived(null)
       if (!win.isDestroyed()) win.destroy()
       if (err) reject(err)
       else resolve(playlistUrl ?? '')
@@ -206,8 +231,21 @@ function interceptPlaylist(embedUrl: string): Promise<string> {
       () => finish(new Error('timed out waiting for the stream')),
       EMBED_TIMEOUT_MS
     )
+    // Two tells for the playlist: most hosts name it .m3u8; tokenized proxies
+    // don't, and only give themselves away by the content-type they answer with.
     ses.webRequest.onBeforeRequest({ urls: ['*://*/*'] }, (details, callback) => {
-      if (M3U8_RE.test(details.url)) {
+      if (M3U8_RE.test(details.url) && !AD_HOST_RE.test(details.url)) {
+        callback({ cancel: true })
+        finish(null, details.url)
+        return
+      }
+      callback({})
+    })
+    ses.webRequest.onHeadersReceived({ urls: ['*://*/*'] }, (details, callback) => {
+      const type = Object.entries(details.responseHeaders ?? {})
+        .find(([k]) => k.toLowerCase() === 'content-type')?.[1]
+        ?.join(';')
+      if (type && HLS_CONTENT_TYPE_RE.test(type) && !AD_HOST_RE.test(details.url)) {
         callback({ cancel: true })
         finish(null, details.url)
         return
@@ -221,34 +259,21 @@ function interceptPlaylist(embedUrl: string): Promise<string> {
   })
 }
 
-// Kalshi's CDN rejects any browser Origin it doesn't allowlist (403 before
-// CORS even applies), so the renderer can't call it. Main-process fetch sends
-// no Origin header; market data rides back over IPC.
-const KALSHI_BASE = 'https://api.elections.kalshi.com'
-
-export function registerFightStreams(): void {
-  ipcMain.handle('fights:kalshiGet', async (_e, path: string): Promise<unknown> => {
-    if (typeof path !== 'string' || !path.startsWith('/trade-api/v2/')) {
-      throw new Error('invalid kalshi path')
-    }
-    const res = await fetch(KALSHI_BASE + path)
-    if (!res.ok) throw new Error(`kalshi ${res.status}`)
-    return await res.json()
-  })
-
-  ipcMain.handle('fights:resolveStream', async (_e, embedUrl: string): Promise<string> => {
+export function registerEmbedStreams(): void {
+  ipcMain.handle('embed:resolveStream', async (_e, embedUrl: string): Promise<string> => {
     if (typeof embedUrl !== 'string' || !embedUrl.startsWith('https://')) {
       throw new Error('invalid embed url')
     }
+    const referer = `${new URL(embedUrl).origin}/`
     const run = embedQueue.then(() => interceptPlaylist(embedUrl))
     embedQueue = run.catch(() => undefined)
     const playlistUrl = await run
     await ensureProxy()
-    return proxyUrlFor(playlistUrl)
+    return proxyUrlFor(playlistUrl, referer, 'playlist')
   })
 }
 
-export function stopFightProxy(): void {
+export function stopEmbedProxy(): void {
   proxyServer?.close()
   proxyServer = null
 }
