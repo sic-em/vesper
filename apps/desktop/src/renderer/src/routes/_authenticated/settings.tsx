@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { AccountSection } from '@renderer/components/settings/account-section'
-import { AppearanceSection } from '@renderer/components/settings/appearance-section'
 import { PlaybackSection } from '@renderer/components/settings/playback-section'
 import { StorageSection } from '@renderer/components/settings/storage-section'
 import { IntegrationsSection } from '@renderer/components/settings/integrations-section'
@@ -22,9 +21,6 @@ function SettingsPage(): React.JSX.Element {
       <div className="flex flex-col gap-10 pt-8">
         <Section title="Account">
           <AccountSection />
-        </Section>
-        <Section title="Appearance">
-          <AppearanceSection />
         </Section>
         <Section title="Playback">
           <PlaybackSection />
