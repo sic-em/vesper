@@ -12,6 +12,7 @@ import Entry_2_3_0 from './2.3.0.mdx'
 import Entry_2_5_0 from './2.5.0.mdx'
 import Entry_2_6_0 from './2.6.0.mdx'
 import Entry_2_7_0 from './2.7.0.mdx'
+import Entry_2_8_0 from './2.8.0.mdx'
 
 export interface ChangelogEntry {
   version: string
@@ -22,6 +23,12 @@ export interface ChangelogEntry {
 }
 
 export const entries: ChangelogEntry[] = [
+  {
+    version: '2.8.0',
+    date: '2026-09-09',
+    summary: 'A new app icon: the red theater curtain, everywhere.',
+    body: Entry_2_8_0
+  },
   {
     version: '2.7.0',
     date: '2026-09-09',
