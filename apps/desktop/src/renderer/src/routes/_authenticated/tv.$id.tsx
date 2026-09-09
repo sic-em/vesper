@@ -289,6 +289,19 @@ function TvPage(): React.JSX.Element {
               }
             })
           }}
+          onPickedWeb={({ source }) => {
+            void navigate({
+              to: '/watch-web/$mediaType/$id',
+              params: { mediaType: 'tv', id: String(tvId) },
+              search: {
+                title: details.data.name,
+                episodeLabel,
+                season: pickerSeason,
+                episode: pickerEpisode,
+                source: source.id
+              }
+            })
+          }}
         />
       ) : null}
     </div>

@@ -17,7 +17,8 @@ import {
   registerIconVariants,
   windowIconImage
 } from './icon-variants'
-import { registerFightStreams, stopFightProxy } from './fight-stream'
+import { registerEmbedStreams, stopEmbedProxy } from './embed-stream'
+import { registerKalshi } from './kalshi'
 
 app.commandLine.appendSwitch('enable-features', 'PlatformHEVCDecoderSupport')
 
@@ -418,7 +419,8 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
 
   registerIconVariants(() => mainWindowRef)
-  registerFightStreams()
+  registerEmbedStreams()
+  registerKalshi()
 
   ipcMain.handle(
     'subtitles:pickFile',
@@ -620,6 +622,6 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   stopRendererServer()
-  stopFightProxy()
+  stopEmbedProxy()
   void disconnectDiscord()
 })

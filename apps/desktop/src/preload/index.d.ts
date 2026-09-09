@@ -59,8 +59,11 @@ export interface VesperApi {
   app: {
     relaunch: () => Promise<void>
   }
-  fights: {
+  embed: {
+    /** Playlist URL (via the local header proxy) for any https embed page. */
     resolveStream: (embedUrl: string) => Promise<string>
+  }
+  fights: {
     kalshiGet: (path: string) => Promise<unknown>
   }
   appIcon: {
