@@ -1,6 +1,16 @@
-import { app, shell, BrowserWindow, ipcMain, session, screen, clipboard, dialog } from 'electron'
-import { join, basename, resolve } from 'path'
-import { promises as fsp, readFileSync, writeFileSync } from 'fs'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  session,
+  screen,
+  clipboard,
+  dialog,
+  nativeImage
+} from 'electron'
+import { join, basename, extname, resolve } from 'path'
+import { promises as fsp, existsSync, readFileSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import windowStateKeeper from 'electron-window-state'
 import { setDiscordActivity, clearDiscordActivity, disconnectDiscord } from './discord'
@@ -11,12 +21,8 @@ import {
   openInExternalPlayer,
   type ExternalPlayerId
 } from './external-players'
-import {
-  applyAppIcon,
-  currentIconVariant,
-  registerIconVariants,
-  windowIconImage
-} from './icon-variants'
+import icon from '../../resources/icon.png?asset'
+import iconMac from '../../resources/icon-mac.png?asset'
 import { registerEmbedStreams, stopEmbedProxy } from './embed-stream'
 import { registerKalshi } from './kalshi'
 
@@ -69,8 +75,42 @@ function writeZoomStep(step: number): void {
 const APPLIED_CACHE_LIMIT_BYTES = readCacheLimitFile()
 app.commandLine.appendSwitch('disk-cache-size', String(APPLIED_CACHE_LIMIT_BYTES))
 
-if (process.platform === 'darwin' && app.dock) {
-  applyAppIcon(currentIconVariant(), null)
+// Earlier releases let users pick an icon by repointing their Start Menu,
+// desktop, and pinned-taskbar shortcuts at a variant .ico under resources.
+// Those files no longer ship, so a shortcut still aimed there would draw a
+// blank; point it back at the exe, whose embedded icon is the current one.
+function resetLegacyShortcutIcons(): void {
+  if (process.platform !== 'win32' || !app.isPackaged) return
+  const appData = app.getPath('appData')
+  const names = [...new Set([basename(process.execPath, extname(process.execPath)), app.getName()])]
+  const dirs = [
+    join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs'),
+    app.getPath('desktop'),
+    join(appData, 'Microsoft', 'Internet Explorer', 'Quick Launch', 'User Pinned', 'TaskBar')
+  ]
+  for (const dir of dirs) {
+    for (const name of names) {
+      const link = join(dir, `${name}.lnk`)
+      if (!existsSync(link)) continue
+      try {
+        const details = shell.readShortcutLink(link)
+        if (!details.icon || !/[\\/]resources[\\/]icons[\\/]/i.test(details.icon)) continue
+        shell.writeShortcutLink(link, 'update', {
+          ...details,
+          icon: process.execPath,
+          iconIndex: 0
+        })
+      } catch {
+        /* a shortcut the user moved or locked is not worth failing launch over */
+      }
+    }
+  }
+}
+
+// Packaged builds carry the icon in the bundle; in dev the Dock shows
+// Electron's own until told otherwise.
+if (process.platform === 'darwin' && app.dock && !app.isPackaged) {
+  app.dock.setIcon(nativeImage.createFromPath(iconMac))
 }
 
 const PROTOCOL = 'vesper'
@@ -256,7 +296,7 @@ function createWindow(): BrowserWindow {
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     trafficLightPosition: { x: 18, y: 15 },
     frame: process.platform === 'win32' ? false : undefined,
-    ...(process.platform !== 'darwin' ? { icon: windowIconImage() } : {}),
+    ...(process.platform !== 'darwin' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -418,7 +458,7 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
-  registerIconVariants(() => mainWindowRef)
+  resetLegacyShortcutIcons()
   registerEmbedStreams()
   registerKalshi()
 
@@ -471,13 +511,6 @@ app.whenReady().then(() => {
 
   ipcMain.handle('devtools:toggle', (event) => {
     event.sender.toggleDevTools()
-  })
-
-  // Windows rereads a shortcut's icon only when it launches the app, so the icon
-  // picker offers a restart to make the new one show up on the taskbar.
-  ipcMain.handle('app:relaunch', () => {
-    app.relaunch()
-    app.quit()
   })
 
   ipcMain.handle('externalPlayer:list', () => listExternalPlayers())

@@ -1,4 +1,4 @@
-// Regenerates all app icons from icon-source.svg.
+// Regenerates all app icons from icon-source.png.
 // Run from repo root: node apps/desktop/build/generate-icons.mjs
 // Windows (full-bleed, own silhouette): build/icon.ico, build/icon.png, resources/icon.png
 // macOS (artwork in the 824/1024 Apple grid footprint): build/icon.icns, resources/icon-mac.png
@@ -13,10 +13,10 @@ const png2icons = require('png2icons')
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const resources = path.join(here, '..', 'resources')
-const svg = readFileSync(path.join(here, 'icon-source.svg'))
+const source = readFileSync(path.join(here, 'icon-source.png'))
 
-// Render big, then trim the transparent margins so the artwork fills the frame.
-const trimmed = await sharp(svg, { density: 300 }).trim().png().toBuffer()
+// Trim the transparent margins so the artwork fills the frame.
+const trimmed = await sharp(source).trim().png().toBuffer()
 const meta = await sharp(trimmed).metadata()
 const box = Math.max(meta.width, meta.height)
 

@@ -1,14 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
-export type IconVariantId =
-  | 'popcorn'
-  | 'hidden-leaf'
-  | 'akatsuki'
-  | 'soda'
-  | '3d'
-  | 'super-saiyan'
-  | 'ramen'
-
 export interface DiscordActivity {
   details: string
   state: string
@@ -56,19 +47,12 @@ export interface VesperApi {
     list: () => Promise<Array<{ id: 'vlc' | 'iina' | 'mpv'; name: string }>>
     open: (id: 'vlc' | 'iina' | 'mpv', url: string, positionSec: number) => Promise<void>
   }
-  app: {
-    relaunch: () => Promise<void>
-  }
   embed: {
     /** Playlist URL (via the local header proxy) for any https embed page. */
     resolveStream: (embedUrl: string) => Promise<string>
   }
   fights: {
     kalshiGet: (path: string) => Promise<unknown>
-  }
-  appIcon: {
-    getVariant: () => Promise<IconVariantId>
-    setVariant: (id: IconVariantId) => Promise<void>
   }
   onOpenUrl: (cb: (route: string) => void) => () => void
   onAuthCode: (cb: (code: string) => void) => () => void
