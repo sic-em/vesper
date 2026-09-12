@@ -3,9 +3,14 @@ export const prerender = true
 
 import Layout from "@/layouts/main.astro"
 import { DownloadButton } from "@/components/download-button"
-import desktopPkg from "../../../desktop/package.json"
-
-const version = desktopPkg.version
+// Read the current release version from the updater feed at build time so the
+// site does not depend on files outside apps/site when deployed on its own.
+const RELEASE_FEED =
+  "https://pub-92303d062b7f481ea248cd257e2b658c.r2.dev/release/latest.yml"
+const version = await fetch(RELEASE_FEED)
+  .then((r) => (r.ok ? r.text() : ""))
+  .then((t) => t.match(/^version:\s*(.+)$/m)?.[1]?.trim())
+  .catch(() => undefined)
 
 const wordmark = [
   "_/\\/\\____/\\/\\__/\\/\\/\\/\\/\\/\\____/\\/\\/\\/\\/\\__/\\/\\/\\/\\/\\____/\\/\\/\\/\\/\\/\\__/\\/\\/\\/\\/\\___",
@@ -100,7 +105,7 @@ const organizationSchema = {
     </p>
 
     <div class="reveal [animation-delay:320ms]">
-      <DownloadButton client:load version={version} />
+      <DownloadButton client:load />
     </div>
   </section>
 

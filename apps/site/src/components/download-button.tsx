@@ -2,17 +2,14 @@ import { useEffect, useState } from "react"
 
 type Platform = "mac" | "windows"
 
-const R2_BASE = "https://pub-92303d062b7f481ea248cd257e2b658c.r2.dev/release"
-
 function detectPlatform(): Platform {
   if (typeof navigator === "undefined") return "mac"
   return navigator.userAgent.toLowerCase().includes("win") ? "windows" : "mac"
 }
 
-function downloadUrl(platform: Platform, version: string): string {
-  return platform === "windows"
-    ? `${R2_BASE}/Vesper-Setup-${version}.exe`
-    : `${R2_BASE}/Vesper-${version}-arm64.zip`
+// Resolved server-side from the release feed so links never go stale.
+function downloadUrl(platform: Platform): string {
+  return `/download/${platform}`
 }
 
 function AppleIcon() {
@@ -47,11 +44,7 @@ function WindowsIcon() {
   )
 }
 
-interface DownloadButtonProps {
-  version: string
-}
-
-export function DownloadButton({ version }: DownloadButtonProps) {
+export function DownloadButton() {
   const [platform, setPlatform] = useState<Platform>("mac")
 
   useEffect(() => {
@@ -60,8 +53,7 @@ export function DownloadButton({ version }: DownloadButtonProps) {
 
   return (
     <a
-      href={downloadUrl(platform, version)}
-      download
+      href={downloadUrl(platform)}
       className="group inline-flex h-10 items-center justify-center gap-2 rounded-md bg-foreground px-4 text-sm font-bold text-background transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-foreground/90 active:scale-[0.97]"
     >
       {platform === "windows" ? <WindowsIcon /> : <AppleIcon />}
