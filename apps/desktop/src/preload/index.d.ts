@@ -40,6 +40,10 @@ export interface VesperApi {
   devtools: {
     toggle: () => Promise<void>
   }
+  power: {
+    /** Hold a display wake lock while playback is active; release it when it stops. */
+    setPlaybackActive: (active: boolean) => Promise<void>
+  }
   subtitles: {
     pickFile: () => Promise<{ name: string; bytes: Uint8Array } | null>
   }
