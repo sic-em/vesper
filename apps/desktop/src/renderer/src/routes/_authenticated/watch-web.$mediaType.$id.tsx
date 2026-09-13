@@ -24,6 +24,7 @@ import { movieDetailsQuery, tvDetailsQuery } from '@renderer/lib/tmdb-queries'
 import { tmdbImage } from '@renderer/lib/tmdb'
 import { WEB_SOURCES, webEmbedUrl, webSourceById, type WebSource } from '@renderer/lib/web-sources'
 import { useDiscordPresence } from '@renderer/hooks/use-discord-presence'
+import { useKeepAwake } from '@renderer/hooks/use-keep-awake'
 
 // Web players are HLS behind an embed page (ADR-0018), so like live fights
 // they play through hls.js + <video> rather than the custom engine
@@ -314,6 +315,7 @@ function WatchWebPage(): React.JSX.Element {
   const title =
     search.title || (mediaType === 'movie' ? movieDetails.data?.title : tvDetails.data?.name) || ''
 
+  useKeepAwake(phase === 'playing' && !paused)
   useDiscordPresence({
     title,
     poster,

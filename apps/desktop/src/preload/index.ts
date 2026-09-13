@@ -45,6 +45,10 @@ const api = {
   devtools: {
     toggle: () => ipcRenderer.invoke('devtools:toggle') as Promise<void>
   },
+  power: {
+    setPlaybackActive: (active: boolean) =>
+      ipcRenderer.invoke('power:setPlaybackActive', active) as Promise<void>
+  },
   subtitles: {
     pickFile: () =>
       ipcRenderer.invoke('subtitles:pickFile') as Promise<{

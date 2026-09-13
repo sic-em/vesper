@@ -78,6 +78,7 @@ import {
   type ColorVariant
 } from '@renderer/lib/spider-noir'
 import { useDiscordPresence } from '@renderer/hooks/use-discord-presence'
+import { useKeepAwake } from '@renderer/hooks/use-keep-awake'
 import { api } from '@convex/_generated/api'
 
 type SearchParams = {
@@ -837,6 +838,7 @@ function WatchPage(): React.JSX.Element {
     ? externalHandoff.posSec + Math.max(0, externalNowMs - externalHandoff.atMs) / 1000
     : null
 
+  useKeepAwake(!paused)
   useDiscordPresence({
     title: search.title,
     poster: rpcImageUrl,

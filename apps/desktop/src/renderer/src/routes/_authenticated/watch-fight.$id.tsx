@@ -30,6 +30,7 @@ import {
   type FightStream
 } from '@renderer/lib/fights/api'
 import { useLiveDiscordPresence } from '@renderer/hooks/use-discord-presence'
+import { useKeepAwake } from '@renderer/hooks/use-keep-awake'
 
 // Live fights play through hls.js + <video>, not the custom engine (ADR-0016):
 // the engine has no manifest layer and its finite-duration chrome (seek bar,
@@ -287,6 +288,7 @@ function WatchFightPage(): React.JSX.Element {
   const title = search.title || (match?.title ?? '')
   const poster = search.poster ?? (match ? fightPosterUrl(match) : undefined)
 
+  useKeepAwake(phase === 'playing' && !paused)
   useLiveDiscordPresence({
     title,
     poster,
